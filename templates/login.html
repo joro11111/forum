@@ -1,0 +1,24 @@
+{{define "content"}}
+<div class="card">
+    <h1>🔐 Login to Literary Lions</h1>
+    
+    {{if .Error}}
+        <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+    
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Login</button>
+        <a href="/register" class="btn btn-secondary">Don't have an account? Register</a>
+    </form>
+</div>
+{{end}} 

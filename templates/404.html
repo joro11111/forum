@@ -1,0 +1,19 @@
+{{define "content"}}
+<div class="card" style="text-align: center;">
+    <h1>📖 Page Not Found</h1>
+    <p style="font-size: 1.2rem; color: #7f8c8d; margin: 2rem 0;">
+        Oops! The page you're looking for seems to have wandered off into another story.
+    </p>
+    <p style="color: #7f8c8d; margin-bottom: 2rem;">
+        Don't worry, even the best characters sometimes take unexpected plot turns.
+    </p>
+    <div>
+        <a href="/" class="btn btn-primary" style="margin-right: 1rem;">🏠 Return Home</a>
+        {{if .CurrentUser}}
+            <a href="/create-post" class="btn btn-secondary">✍️ Create a Post</a>
+        {{else}}
+            <a href="/register" class="btn btn-secondary">📚 Join the Community</a>
+        {{end}}
+    </div>
+</div>
+{{end}} 

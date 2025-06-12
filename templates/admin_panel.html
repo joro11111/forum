@@ -1,0 +1,464 @@
+{{define "content"}}
+<div class="admin-header">
+    <h1>🛡️ Admin Control Panel</h1>
+    <p class="welcome-message">Welcome, {{.CurrentUser.Username}}! Manage your Literary Lions community.</p>
+</div>
+
+{{if .Error}}
+    <div class="alert alert-danger">
+        {{.Error}}
+    </div>
+{{end}}
+
+{{$urlParams := .FormData}}
+{{if $urlParams}}
+    {{if eq $urlParams.success "deleted"}}
+        <div class="alert alert-success">
+            User successfully deleted!
+        </div>
+    {{end}}
+    {{if eq $urlParams.error "confirmation"}}
+        <div class="alert alert-danger">
+            Username confirmation failed. Please try again.
+        </div>
+    {{end}}
+    {{if eq $urlParams.error "delete"}}
+        <div class="alert alert-danger">
+            Failed to delete user. Please try again.
+        </div>
+    {{end}}
+{{end}}
+
+<div class="card">
+    <h2>👥 User Management</h2>
+    <p class="stats-summary">Total Users: <strong>{{len .Users}}</strong></p>
+    
+    <div class="users-table-container">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Activity</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Users}}
+                <tr class="user-row {{if eq .Status "suspended"}}suspended{{end}}">
+                    <td class="user-info">
+                        <div class="user-avatar">
+                            {{if .ProfilePicture}}
+                                <img src="{{.ProfilePicture}}" alt="{{.Username}}" class="avatar-img">
+                            {{else}}
+                                <div class="avatar-default">
+                                    <span>{{slice .Username 0 1}}</span>
+                                </div>
+                            {{end}}
+                        </div>
+                        <div class="user-details">
+                            <strong>{{.Username}}</strong>
+                            <small>{{.Email}}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="role-badge {{if eq .Role "admin"}}admin{{else}}user{{end}}">
+                            {{if eq .Role "admin"}}🛡️ Admin{{else}}👤 User{{end}}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge {{.Status}}">
+                            {{if eq .Status "active"}}✅ Active{{else}}🚫 Suspended{{end}}
+                        </span>
+                    </td>
+                    <td class="activity-stats">
+                        <div class="stat-item">📝 {{.PostsCount}} posts</div>
+                        <div class="stat-item">💬 {{.CommentsCount}} comments</div>
+                        <div class="stat-item">👍 {{.LikesReceived}} likes</div>
+                    </td>
+                    <td>{{.CreatedAt.Format "Jan 2, 2006"}}</td>
+                    <td class="actions">
+                        {{if ne .Role "admin"}}
+                            {{if eq .Status "active"}}
+                                <form method="POST" action="/admin/suspend" style="display: inline;">
+                                    <input type="hidden" name="user_id" value="{{.ID}}">
+                                    <input type="hidden" name="action" value="suspend">
+                                    <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Suspend user {{.Username}}?')">
+                                        🚫 Suspend
+                                    </button>
+                                </form>
+                            {{else}}
+                                <form method="POST" action="/admin/suspend" style="display: inline;">
+                                    <input type="hidden" name="user_id" value="{{.ID}}">
+                                    <input type="hidden" name="action" value="unsuspend">
+                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Reactivate user {{.Username}}?')">
+                                        ✅ Reactivate
+                                    </button>
+                                </form>
+                            {{end}}
+                            
+                            <button type="button" class="btn btn-danger btn-sm" onclick="showDeleteModal('{{.ID}}', '{{.Username}}')">
+                                🗑️ Delete
+                            </button>
+                        {{else}}
+                            <span class="protected-user">🛡️ Protected</span>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>⚠️ Confirm User Deletion</h3>
+            <span class="close" onclick="hideDeleteModal()">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <p><strong>This action cannot be undone!</strong></p>
+            <p>Deleting this user will permanently remove:</p>
+            <ul>
+                <li>Their user account and profile</li>
+                <li>All posts they've created</li>
+                <li>All comments they've made</li>
+                <li>All comments on their posts (from other users)</li>
+                <li>All likes and dislikes associated with their content</li>
+                <li>All their login sessions</li>
+            </ul>
+            
+            <p>To confirm deletion, please type the username <strong><span id="usernameToDelete"></span></strong> below:</p>
+            
+            <form method="post" action="/admin/delete" onsubmit="return validateDeletion(event)">
+                <input type="hidden" id="deleteUserId" name="user_id" value="">
+                
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        id="confirmUsername" 
+                        name="confirmation" 
+                        class="form-control" 
+                        placeholder="Type username here"
+                        required
+                    >
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>Delete User Forever</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #3498db, #2c3e50);
+    color: white;
+    border-radius: 8px;
+}
+
+.admin-header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2.5rem;
+}
+
+.welcome-message {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.stats-summary {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+}
+
+.users-table-container {
+    overflow-x: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.users-table th,
+.users-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.users-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.user-row.suspended {
+    background-color: #fdf2f2;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    flex-shrink: 0;
+}
+
+.avatar-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-default {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2c3e50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.user-details strong {
+    display: block;
+    color: #2c3e50;
+}
+
+.user-details small {
+    color: #7f8c8d;
+}
+
+.role-badge,
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.role-badge.admin {
+    background: #e74c3c;
+    color: white;
+}
+
+.role-badge.user {
+    background: #95a5a6;
+    color: white;
+}
+
+.status-badge.active {
+    background: #27ae60;
+    color: white;
+}
+
+.status-badge.suspended {
+    background: #e74c3c;
+    color: white;
+}
+
+.activity-stats {
+    font-size: 0.9rem;
+}
+
+.stat-item {
+    margin-bottom: 4px;
+    color: #555;
+}
+
+.actions {
+    white-space: nowrap;
+}
+
+.actions .btn {
+    margin-right: 8px;
+    margin-bottom: 4px;
+}
+
+.protected-user {
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    background-color: #e74c3c;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.close {
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.modal-body li {
+    margin-bottom: 0.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .users-table {
+        font-size: 0.9rem;
+    }
+    
+    .users-table th,
+    .users-table td {
+        padding: 8px;
+    }
+    
+    .actions {
+        white-space: normal;
+    }
+    
+    .actions .btn {
+        margin-bottom: 8px;
+        display: block;
+        width: 100%;
+    }
+    
+    .modal-content {
+        margin: 2% auto;
+        width: 95%;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+let currentUsername = '';
+
+function showDeleteModal(userId, username) {
+    document.getElementById('deleteUserId').value = userId;
+    document.getElementById('usernameToDelete').textContent = username;
+    document.getElementById('confirmUsername').value = '';
+    document.getElementById('deleteBtn').disabled = true;
+    currentUsername = username;
+    document.getElementById('deleteModal').style.display = 'block';
+    document.getElementById('confirmUsername').focus();
+}
+
+function hideDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    document.getElementById('confirmUsername').value = '';
+    document.getElementById('deleteBtn').disabled = true;
+    currentUsername = '';
+}
+
+// Enable delete button only when username matches exactly
+document.getElementById('confirmUsername').addEventListener('input', function() {
+    if (this.value === currentUsername) {
+        document.getElementById('deleteBtn').disabled = false;
+    } else {
+        document.getElementById('deleteBtn').disabled = true;
+    }
+});
+
+function validateDeletion(event) {
+    const confirmInput = document.getElementById('confirmUsername');
+    
+    if (confirmInput.value !== currentUsername) {
+        alert('Please type the username exactly to confirm deletion.');
+        event.preventDefault();
+        return false;
+    }
+    
+    return confirm('Are you absolutely sure? This cannot be undone!');
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target === modal) {
+        hideDeleteModal();
+    }
+}
+
+// Handle URL parameters for success/error messages
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success') || urlParams.has('error')) {
+        // Clear URL parameters after 5 seconds
+        setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 5000);
+    }
+});
+</script>
+{{end}} 

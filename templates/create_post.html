@@ -1,0 +1,47 @@
+{{define "content"}}
+<div class="card">
+    <h1>✍️ Create New Post</h1>
+    
+    {{if .Error}}
+        <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+    
+    <form method="POST" action="/create-post">
+        <div class="form-group">
+            <label for="title">Post Title</label>
+            <input type="text" id="title" name="title" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id" class="form-control" required>
+                <option value="">Select a category</option>
+                {{range .Categories}}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="content">Post Content</label>
+            <textarea id="content" name="content" class="form-control" rows="10" required placeholder="Share your thoughts about books, authors, or literary topics..."></textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Create Post</button>
+            <a href="/" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 2rem auto 0; background-color: #f8f9fa;">
+    <h3>💡 Tips for Great Posts</h3>
+    <ul style="margin-left: 1.5rem; color: #7f8c8d;">
+        <li>Use a descriptive title that captures your main point</li>
+        <li>Choose the most appropriate category for better discoverability</li>
+        <li>Include specific examples or quotes when discussing books</li>
+        <li>Ask questions to encourage community discussion</li>
+        <li>Be respectful of different opinions and perspectives</li>
+    </ul>
+</div>
+{{end}} 

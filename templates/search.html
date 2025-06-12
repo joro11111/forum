@@ -1,0 +1,238 @@
+{{define "content"}}
+<div class="card">
+    <h1>🔍 Search Posts</h1>
+    
+    <!-- Search Form -->
+    <form method="GET" action="/search" class="search-form" style="margin-bottom: 2rem;">
+        <div class="search-container">
+            <input 
+                type="text" 
+                name="q" 
+                id="search-input"
+                class="form-control" 
+                placeholder="Search for posts by title or content..." 
+                value="{{index .FormData "q"}}"
+                autocomplete="off"
+                style="margin-bottom: 1rem;"
+            >
+            <div id="search-suggestions" class="search-suggestions"></div>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+    
+    <!-- Search Results -->
+    {{if .Posts}}
+        <h2>Search Results ({{len .Posts}} found)</h2>
+        {{range .Posts}}
+        <div class="post-card">
+            <div class="post-header">
+                <h3><a href="/post/{{.ID}}" class="post-title">{{.Title}}</a></h3>
+                <div class="post-meta">
+                    <span class="author">👤 <a href="/profile/{{.Username}}">{{.Username}}</a></span>
+                    <span class="category">📚 {{.CategoryName}}</span>
+                    <span class="date">📅 {{.CreatedAt.Format "Jan 2, 2006"}}</span>
+                    <span class="stats">
+                        👍 {{.LikesCount}} 
+                        👎 {{.DislikesCount}} 
+                        💬 {{.CommentsCount}}
+                    </span>
+                </div>
+            </div>
+            <div class="post-content">
+                <p>{{slice .Content 0 200}}{{if gt (len .Content) 200}}...{{end}}</p>
+            </div>
+        </div>
+        {{end}}
+    {{else}}
+        {{if ne (index . "q") ""}}
+            <div class="no-results">
+                <p>📖 No posts found matching your search. Try different keywords or browse by category.</p>
+                <a href="/" class="btn btn-secondary">Browse All Posts</a>
+            </div>
+        {{else}}
+            <div class="search-help">
+                <p>Enter keywords to search through post titles and content.</p>
+                <p>💡 <strong>Tips:</strong></p>
+                <ul>
+                    <li>Try searching for book titles, author names, or genres</li>
+                    <li>Use specific keywords for better results</li>
+                    <li>Search is case-insensitive</li>
+                </ul>
+            </div>
+        {{end}}
+    {{end}}
+</div>
+
+<style>
+.search-form {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.suggestion-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.post-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: box-shadow 0.2s;
+}
+
+.post-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.post-header h3 {
+    margin: 0 0 0.5rem 0;
+}
+
+.post-title {
+    color: #2c3e50;
+    text-decoration: none;
+    font-size: 1.3rem;
+}
+
+.post-title:hover {
+    color: #3498db;
+}
+
+.post-meta {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.post-meta a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.post-meta a:hover {
+    text-decoration: underline;
+}
+
+.post-content {
+    color: #555;
+    line-height: 1.6;
+}
+
+.no-results, .search-help {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.search-help ul {
+    text-align: left;
+    display: inline-block;
+    margin-top: 1rem;
+}
+
+.search-help li {
+    margin-bottom: 0.5rem;
+}
+</style>
+
+<script>
+// Real-time search suggestions
+const searchInput = document.getElementById('search-input');
+const suggestionsDiv = document.getElementById('search-suggestions');
+let searchTimeout;
+
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        suggestionsDiv.style.display = 'none';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(suggestions => {
+                showSuggestions(suggestions);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                suggestionsDiv.style.display = 'none';
+            });
+    }, 300);
+});
+
+function showSuggestions(suggestions) {
+    if (suggestions.length === 0) {
+        suggestionsDiv.style.display = 'none';
+        return;
+    }
+    
+    suggestionsDiv.innerHTML = '';
+    suggestions.forEach(suggestion => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.textContent = suggestion.title;
+        div.addEventListener('click', () => {
+            window.location.href = `/post/${suggestion.id}`;
+        });
+        suggestionsDiv.appendChild(div);
+    });
+    
+    suggestionsDiv.style.display = 'block';
+}
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function(e) {
+    if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+        suggestionsDiv.style.display = 'none';
+    }
+});
+
+// Handle form submission
+searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        suggestionsDiv.style.display = 'none';
+    }
+});
+</script>
+{{end}} 

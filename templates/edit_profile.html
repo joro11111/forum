@@ -1,0 +1,444 @@
+{{define "content"}}
+<div class="card">
+    <h1>✏️ Edit Profile</h1>
+    
+    {{if .Error}}
+        <div class="alert alert-danger">
+            {{.Error}}
+        </div>
+    {{end}}
+    
+    <form method="post" action="/edit-profile">
+        <div class="form-group">
+            <label for="profile_picture">Profile Picture URL</label>
+            <input 
+                type="url" 
+                id="profile_picture" 
+                name="profile_picture" 
+                class="form-control" 
+                value="{{.CurrentUser.ProfilePicture}}"
+                placeholder="https://example.com/your-profile-picture.jpg"
+            >
+            <small class="form-text">Enter a URL to your profile picture. Leave empty for default avatar.</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="signature">Signature</label>
+            <textarea 
+                id="signature" 
+                name="signature" 
+                class="form-control" 
+                rows="4" 
+                maxlength="500"
+                placeholder="Write a short signature about yourself, your favorite books, or your reading philosophy..."
+            >{{.CurrentUser.Signature}}</textarea>
+            <small class="form-text">
+                <span id="char-count">{{len .CurrentUser.Signature}}</span>/500 characters
+            </small>
+        </div>
+        
+        <div class="preview-section">
+            <h3>Preview</h3>
+            <div class="profile-preview">
+                <div class="preview-avatar">
+                    <img id="preview-image" src="{{.CurrentUser.ProfilePicture}}" alt="Profile Preview" class="preview-picture" style="{{if not .CurrentUser.ProfilePicture}}display: none;{{end}}">
+                    <div id="preview-default" class="preview-default-avatar" style="{{if .CurrentUser.ProfilePicture}}display: none;{{end}}">
+                        <span class="preview-avatar-text">{{slice .CurrentUser.Username 0 1}}</span>
+                    </div>
+                </div>
+                <div class="preview-info">
+                    <h4>📚 {{.CurrentUser.Username}}</h4>
+                    <div id="preview-signature" class="preview-signature" style="{{if not .CurrentUser.Signature}}display: none;{{end}}">
+                        <h5>📝 Signature</h5>
+                        <p class="preview-signature-text">{{.CurrentUser.Signature}}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+            <a href="/profile/{{.CurrentUser.Username}}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card danger-zone">
+    <h2>⚠️ Danger Zone</h2>
+    <p class="danger-warning">
+        <strong>Warning:</strong> Deleting your profile is permanent and cannot be undone. 
+        This will delete your account, all your posts, comments, and likes from the forum forever.
+    </p>
+    
+    <button type="button" class="btn btn-danger" onclick="showDeleteModal()">🗑️ Delete Profile</button>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>⚠️ Confirm Profile Deletion</h3>
+            <span class="close" onclick="hideDeleteModal()">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <p><strong>This action cannot be undone!</strong></p>
+            <p>Deleting your profile will permanently remove:</p>
+            <ul>
+                <li>Your user account and profile information</li>
+                <li>All posts you've created</li>
+                <li>All comments you've made</li>
+                <li>All likes and dislikes you've given</li>
+                <li>Your login sessions</li>
+            </ul>
+            
+            <p>To confirm deletion, please type your username <strong>{{.CurrentUser.Username}}</strong> below:</p>
+            
+            <form method="post" action="/delete-profile" onsubmit="return validateDeletion(event)">
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        id="confirmUsername" 
+                        name="confirmation" 
+                        class="form-control" 
+                        placeholder="Type your username here"
+                        required
+                    >
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>Delete My Profile Forever</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.preview-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.preview-section h3 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.profile-preview {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.preview-avatar {
+    flex-shrink: 0;
+}
+
+.preview-picture {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #3498db;
+}
+
+.preview-default-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2c3e50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #3498db;
+}
+
+.preview-avatar-text {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+
+.preview-info {
+    flex: 1;
+}
+
+.preview-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.preview-signature {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 3px solid #3498db;
+    margin-top: 1rem;
+}
+
+.preview-signature h5 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.preview-signature-text {
+    margin: 0;
+    color: #555;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+#char-count {
+    font-weight: bold;
+}
+
+.char-limit-warning {
+    color: #e74c3c !important;
+}
+
+/* Danger Zone Styles */
+.danger-zone {
+    border: 2px solid #e74c3c;
+    background: #fdf2f2;
+    margin-top: 2rem;
+}
+
+.danger-zone h2 {
+    color: #e74c3c;
+    margin: 0 0 1rem 0;
+}
+
+.danger-warning {
+    color: #721c24;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+    border-color: #c0392b;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    background-color: #e74c3c;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.close {
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.modal-body li {
+    margin-bottom: 0.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .profile-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+// Real-time preview updates
+const profilePictureInput = document.getElementById('profile_picture');
+const signatureInput = document.getElementById('signature');
+const previewImage = document.getElementById('preview-image');
+const previewDefault = document.getElementById('preview-default');
+const previewSignature = document.getElementById('preview-signature');
+const previewSignatureText = document.querySelector('.preview-signature-text');
+const charCount = document.getElementById('char-count');
+
+// Update profile picture preview
+profilePictureInput.addEventListener('input', function() {
+    const url = this.value.trim();
+    
+    if (url) {
+        previewImage.src = url;
+        previewImage.style.display = 'block';
+        previewDefault.style.display = 'none';
+        
+        // Handle image load errors
+        previewImage.onerror = function() {
+            previewImage.style.display = 'none';
+            previewDefault.style.display = 'flex';
+        };
+    } else {
+        previewImage.style.display = 'none';
+        previewDefault.style.display = 'flex';
+    }
+});
+
+// Update signature preview
+signatureInput.addEventListener('input', function() {
+    const text = this.value.trim();
+    const length = this.value.length;
+    
+    // Update character count
+    charCount.textContent = length;
+    
+    // Add warning color when approaching limit
+    if (length > 450) {
+        charCount.classList.add('char-limit-warning');
+    } else {
+        charCount.classList.remove('char-limit-warning');
+    }
+    
+    if (text) {
+        previewSignatureText.textContent = text;
+        previewSignature.style.display = 'block';
+    } else {
+        previewSignature.style.display = 'none';
+    }
+});
+
+// Initialize preview
+document.addEventListener('DOMContentLoaded', function() {
+    // Trigger initial preview updates
+    profilePictureInput.dispatchEvent(new Event('input'));
+    signatureInput.dispatchEvent(new Event('input'));
+});
+
+// Delete modal functions
+function showDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'block';
+    document.getElementById('confirmUsername').focus();
+}
+
+function hideDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    document.getElementById('confirmUsername').value = '';
+    document.getElementById('deleteBtn').disabled = true;
+}
+
+// Enable delete button only when username matches exactly
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmUsername');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const currentUsername = '{{.CurrentUser.Username}}';
+    
+    confirmInput.addEventListener('input', function() {
+        if (this.value === currentUsername) {
+            deleteBtn.disabled = false;
+        } else {
+            deleteBtn.disabled = true;
+        }
+    });
+});
+
+function validateDeletion(event) {
+    const confirmInput = document.getElementById('confirmUsername');
+    const currentUsername = '{{.CurrentUser.Username}}';
+    
+    if (confirmInput.value !== currentUsername) {
+        alert('Please type your username exactly to confirm deletion.');
+        event.preventDefault();
+        return false;
+    }
+    
+    return confirm('Are you absolutely sure? This cannot be undone!');
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target === modal) {
+        hideDeleteModal();
+    }
+}
+</script>
+{{end}} 

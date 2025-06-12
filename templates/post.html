@@ -1,0 +1,82 @@
+{{define "content"}}
+<div class="card">
+    <h1>{{.Post.Title}}</h1>
+    
+    <div class="post-meta">
+        <strong><a href="/profile/{{.Post.Username}}" style="color: #3498db; text-decoration: none;">{{.Post.Username}}</a></strong> in <strong>{{.Post.CategoryName}}</strong> • 
+        {{.Post.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+    </div>
+    
+    <div class="post-content">
+        {{.Post.Content}}
+    </div>
+    
+    <div class="post-actions">
+        {{if .CurrentUser}}
+            <form method="POST" action="/like-post" class="like-form">
+                <input type="hidden" name="post_id" value="{{.Post.ID}}">
+                <input type="hidden" name="action" value="like">
+                <button type="submit" class="like-btn">👍 {{.Post.LikesCount}}</button>
+            </form>
+            
+            <form method="POST" action="/like-post" class="like-form">
+                <input type="hidden" name="post_id" value="{{.Post.ID}}">
+                <input type="hidden" name="action" value="dislike">
+                <button type="submit" class="like-btn">👎 {{.Post.DislikesCount}}</button>
+            </form>
+        {{else}}
+            <span class="like-btn">👍 {{.Post.LikesCount}}</span>
+            <span class="like-btn">👎 {{.Post.DislikesCount}}</span>
+        {{end}}
+    </div>
+</div>
+
+<div class="comments-section">
+    <h3>💬 Comments ({{len .Comments}})</h3>
+    
+    {{if .CurrentUser}}
+        <div class="card">
+            <h4>Add a Comment</h4>
+            <form method="POST" action="/create-comment">
+                <input type="hidden" name="post_id" value="{{.Post.ID}}">
+                <div class="form-group">
+                    <textarea name="content" class="form-control" rows="3" placeholder="Share your thoughts..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+            </form>
+        </div>
+    {{end}}
+    
+    {{range .Comments}}
+        <div class="comment">
+            <div class="comment-meta">
+                <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+            </div>
+            <div>{{.Content}}</div>
+            
+            {{if $.CurrentUser}}
+                <div class="post-actions">
+                    <form method="POST" action="/like-comment" class="like-form">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <input type="hidden" name="action" value="like">
+                        <button type="submit" class="like-btn btn-sm">👍 {{.LikesCount}}</button>
+                    </form>
+                    
+                    <form method="POST" action="/like-comment" class="like-form">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <input type="hidden" name="action" value="dislike">
+                        <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
+                    </form>
+                </div>
+            {{else}}
+                <div class="post-actions">
+                    <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
+                    <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
+                </div>
+            {{end}}
+        </div>
+    {{else}}
+        <p style="text-align: center; color: #7f8c8d; font-style: italic;">No comments yet. Be the first to comment!</p>
+    {{end}}
+</div>
+{{end}} 
