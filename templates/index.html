@@ -1,139 +1,81 @@
 {{define "content"}}
-{{if and .FormData .FormData.success}}
-<div class="alert alert-success">
-    {{.FormData.success}}
-</div>
-{{end}}
-
-<div class="filters">
-    <h3>🔍 Filter Posts</h3>
-    
-    <div class="filter-options">
-        <a href="/" class="filter-btn {{if not .Filter}}active{{end}}">All Posts</a>
-        {{if .CurrentUser}}
-            <a href="/?filter=my-posts" class="filter-btn {{if eq .Filter "my-posts"}}active{{end}}">My Posts</a>
-            <a href="/?filter=liked-posts" class="filter-btn {{if eq .Filter "liked-posts"}}active{{end}}">Liked Posts</a>
-        {{end}}
-    </div>
-
-    <div class="select-wrapper">
-        <select onchange="window.location.href='/?category=' + this.value">
-            <option value="">All Categories</option>
-            {{range .Categories}}
-                <option value="{{.ID}}" {{if eq $.CategoryID (printf "%d" .ID)}}selected{{end}}>{{.Name}}</option>
+<main>
+    <div class="filters">
+        <h3>🔍 Filter Posts</h3>
+        <div class="filter-options">
+            <a href="/" class="filter-btn {{if not .Filter}}active{{end}}">All Posts</a>
+            {{if .CurrentUser}}
+                <a href="/?filter=my-posts" class="filter-btn {{if eq .Filter "my-posts"}}active{{end}}">My Posts</a>
+                <a href="/?filter=liked-posts" class="filter-btn {{if eq .Filter "liked-posts"}}active{{end}}">Liked Posts</a>
             {{end}}
-        </select>
-    </div>
-</div>
-
-{{if .CurrentUser}}
-<div class="card">
-    <div style="text-align: center;">
-        <h2>📝 Share Your Literary Thoughts</h2>
-        <p style="margin: 1rem 0; color: #7f8c8d;">Start a new discussion about books, authors, or literary topics</p>
-        <a href="/create-post" class="btn btn-primary">Create New Post</a>
-    </div>
-</div>
-{{end}}
-
-<div class="posts-section">
-    {{if .Posts}}
-        {{range .Posts}}
-        <div class="card">
-            <h2><a href="/post/{{.ID}}" style="text-decoration: none; color: #2c3e50;">{{.Title}}</a></h2>
-            
-            <div class="post-meta">
-                <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> in <strong>{{.CategoryName}}</strong> • 
-                {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
-            </div>
-            
-            <div class="post-content">
-                {{if gt (len .Content) 300}}
-                    {{slice .Content 0 300}}...
-                {{else}}
-                    {{.Content}}
-                {{end}}
-            </div>
-            
-            <div class="post-actions">
-                {{if $.CurrentUser}}
-                    <form method="POST" action="/like-post" class="like-form">
-                        <input type="hidden" name="post_id" value="{{.ID}}">
-                        <input type="hidden" name="action" value="like">
-                        <button type="submit" class="like-btn btn-sm">👍 {{.LikesCount}}</button>
-                    </form>
-                    
-                    <form method="POST" action="/like-post" class="like-form">
-                        <input type="hidden" name="post_id" value="{{.ID}}">
-                        <input type="hidden" name="action" value="dislike">
-                        <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
-                    </form>
-                {{else}}
-                    <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
-                    <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
-                {{end}}
-                
-                <span class="like-btn btn-sm">💬 {{.CommentsCount}} comments</span>
-                <a href="/post/{{.ID}}" class="btn btn-secondary btn-sm">Read More</a>
-            </div>
         </div>
-        {{end}}
-    {{else}}
-        <div class="card">
-            <div class="no-posts">
+
+        <!-- Dropdown for small screens -->
+        <div class="select-wrapper">
+            <label for="category-select" class="sr-only">Filter by Category</label>
+            <select id="category-select" onchange="updateCategoryFilter()">
+                <option value="">All Categories</option>
+                {{range .Categories}}
+                    <option value="{{.ID}}" {{if eq $.CategoryID (printf "%d" .ID)}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+
+        <!-- List for larger screens -->
+        <div class="categories-wrapper">
+            <h4>Categories</h4>
+            <ul class="categories-list">
+                <li><a href="/?category=" class="category-btn {{if not $.CategoryID}}active{{end}}">All Categories</a></li>
+                {{range .Categories}}
+                    <li><a href="/?category={{.ID}}" class="category-btn {{if eq $.CategoryID (printf "%d" .ID)}}active{{end}}">{{.Name}}</a></li>
+                {{end}}
+            </ul>
+        </div>
+    </div>
+
+    <div class="posts-section">
+        {{if .Posts}}
+            {{range .Posts}}
+            <div class="card">
+                <h2><a href="/post/{{.ID}}" class="post-title">{{.Title}}</a></h2>
+                <div class="post-meta">
+                    <strong><a href="/profile/{{.Username}}" class="username-link">{{.Username}}</a></strong> in <strong>{{.CategoryName}}</strong> • 
+                    {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+                </div>
+                <div class="post-content">
+                    {{if gt (len .Content) 300}}
+                        {{slice .Content 0 300}}...
+                    {{else}}
+                        {{.Content}}
+                    {{end}}
+                </div>
+                <div class="post-actions">
+                    {{if $.CurrentUser}}
+                        <form method="POST" action="/like-post" class="like-form">
+                            <input type="hidden" name="post_id" value="{{.ID}}">
+                            <input type="hidden" name="action" value="like">
+                            <button type="submit" class="like-btn btn-sm">👍 {{.LikesCount}}</button>
+                        </form>
+                        <form method="POST" action="/like-post" class="like-form">
+                            <input type="hidden" name="post_id" value="{{.ID}}">
+                            <input type="hidden" name="action" value="dislike">
+                            <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
+                        </form>
+                    {{else}}
+                        <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
+                        <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
+                    {{end}}
+                    <span class="like-btn btn-sm">💬 {{.CommentsCount}} comments</span>
+                    <a href="/post/{{.ID}}" class="btn btn-secondary btn-sm">Read More</a>
+                </div>
+            </div>
+            {{end}}
+        {{else}}
+            <div class="card">
                 <h2>📚 No Posts Yet</h2>
-                <p>
-                    {{if eq .Filter "my-posts"}}
-                        You haven't created any posts yet. 
-                    {{else if eq .Filter "liked-posts"}}
-                        You haven't liked any posts yet. 
-                    {{else if .CategoryID}}
-                        No posts found in this category yet. 
-                    {{else}}
-                        No posts have been created yet. 
-                    {{end}}
-                    {{if .CurrentUser}}
-                        <a href="/create-post">Be the first to start a discussion!</a>
-                    {{else}}
-                        <a href="/register">Join the community</a> to start discussions!
-                    {{end}}
-                </p>
+                <p>No posts available for the selected filter.</p>
             </div>
-        </div>
-    {{end}}
-</div>
-
-{{if not .CurrentUser}}
-<div class="card" style="text-align: center; background: linear-gradient(135deg, #3498db, #2c3e50); color: white;">
-    <h2>🦁 Join the Literary Lions Community</h2>
-    <p style="margin: 1rem 0;">Connect with fellow book lovers, share your thoughts, and discover new literary treasures!</p>
-    <div style="margin-top: 1.5rem;">
-        <a href="/register" class="btn btn-success" style="margin-right: 1rem;">Sign Up Now</a>
-        <a href="/login" class="btn btn-secondary">Already a Member?</a>
+        {{end}}
     </div>
-</div>
+</main>
 {{end}}
-
-<script>
-    // Update category filter
-    document.querySelector('select').addEventListener('change', function() {
-        const categoryId = this.value;
-        const currentFilter = new URLSearchParams(window.location.search).get('filter');
-        let url = '/';
-        const params = new URLSearchParams();
-        
-        if (categoryId) {
-            params.append('category', categoryId);
-        }
-        if (currentFilter) {
-            params.append('filter', currentFilter);
-        }
-        
-        if (params.toString()) {
-            url += '?' + params.toString();
-        }
-        
-        window.location.href = url;
-    });
-</script>
-{{end}} 
