@@ -29,6 +29,8 @@ main {
     margin-bottom: 1rem;
 }
 
+
+
 /* Desktop View: Filters on the Right */
 @media (min-width: 768px) {
     main {
@@ -183,6 +185,8 @@ header .logo {
     color: white;
 }
 
+
+
 /* Dropdown for small screens */
 .select-wrapper {
     display: block; /* Visible by default */
@@ -244,6 +248,41 @@ main {
     gap: 0.5rem;
 }
 
+/* Container for post actions */
+.post-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Like/Dislike form */
+.like-form {
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+/* Like/Dislike buttons */
+.like-btn {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  outline: none;
+  margin-right: 0;
+}
+
+.like-btn:hover,
+.like-btn:focus {
+  background-color: #e0e0e0;
+  color: #222;
+  border-color: #888;
+}
+
 .posts-section .card .post-actions .btn-sm {
     background-color: #f6f7f8;
     border: 1px solid #e0e0e0;
@@ -257,7 +296,30 @@ main {
     background-color: #e0e0e0;
 }
 
+/* Like Button Styles */
+/* Default styles */
+.like-btn {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.like-btn:hover {
+  background-color: #e0e0e0;
+}
+
+
+
 /* Night Mode */
+
+filter.night-mode {
+    background-color: #1a1a1b;
+    color: #d7dadc;
+}
+
 body.night-mode {
     background-color: #1a1a1b; /* Reddit dark mode background */
     color: #d7dadc;
@@ -287,21 +349,278 @@ body.night-mode .btn-primary:hover {
 }
 
 /* For mobile screens */
-@media (max-width: 768px) {
-    .nav {
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
 
-    .nav-search input {
-        width: 100%;
-    }
 
-    .categories-wrapper {
-        display: none; /* Hide category buttons */
-    }
-
-    .select-wrapper {
-        display: block; /* Show dropdown instead */
-    }
+/* Make the card fill the viewport, with some padding */
+.card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    max-width: 800px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
+
+/* Dark mode support */
+
+
+/* Light mode (default) */
+.filters {
+  background: #f5f5f5;
+  color: #222;
+}
+
+.filter-btn {
+  background: #eaeaea;
+  color: #222;
+}
+
+
+
+/* Night mode (manual toggle) */
+body.night-mode .filters {
+  background: #181a1b !important;
+  color: #f5f5f5 !important;
+}
+body.night-mode .filter-btn {
+  background: #23272a !important;
+  color: #f5f5f5 !important;
+}
+body.night-mode .filter-btn.active {
+  background: #2980b9 !important;
+  color: #fff !important;
+}
+
+
+.profile-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: flex-start;
+}
+
+.profile-avatar {
+    flex-shrink: 0;
+}
+
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #3498db;
+}
+
+.default-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2c3e50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid #3498db;
+}
+
+.avatar-text {
+    font-size: 3rem;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-info h1 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.member-since {
+    color: #7f8c8d;
+    font-style: italic;
+    margin-bottom: 1rem;
+}
+
+.signature {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+    margin: 1rem 0;
+}
+
+.signature h3 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.signature-text {
+    margin: 0;
+    color: #555;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.profile-actions {
+    margin-top: 1rem;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+
+body.night-mode .profile-stats,
+body.night-mode .post-card {
+  background: #23272a !important;
+  color: #f5f5f5 !important;
+  border-color: #444 !important;
+}
+
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.post-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: box-shadow 0.2s;
+}
+
+.post-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.post-header h3 {
+    margin: 0 0 0.5rem 0;
+}
+
+.post-title {
+    color: #2c3e50;
+    text-decoration: none;
+    font-size: 1.3rem;
+}
+
+.post-title:hover {
+    color: #3498db;
+}
+
+.post-meta {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.post-content {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.post-actions {
+    text-align: right;
+}
+
+.no-posts {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #666;
+}
+
+.no-posts p {
+    margin-bottom: 1rem;
+}
+
+
+
+.card, .comments-section {
+    display: block;
+    width: 100%;
+    clear: both;
+    margin-top: 20px;
+}
+
+.comment{
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    max-width: 800px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+
+body.night-mode .comment {
+  background: #23272a !important;
+  color: #f5f5f5 !important;
+    background-color: #272729;
+    border: 1px solid #343536;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+
+
+/* Manual night mode */
+body.night-mode button,
+body.night-mode .btn,
+body.night-mode .btn-primary,
+body.night-mode .btn-sm,
+body.night-mode .like-btn,
+body.night-mode .filter-btn,
+body.night-mode .category-btn {
+  background-color: #23272a !important;
+  color: #f5f5f5 !important;
+  border-color: #444 !important;
+}
+body.night-mode .btn-primary,
+body.night-mode .filter-btn.active,
+body.night-mode .category-btn.active {
+  background-color: #2980b9 !important;
+  color: #fff !important;
+}
+

@@ -1,5 +1,6 @@
 {{define "content"}}
 <main>
+   
     <div class="filters">
         <h3>🔍 Filter Posts</h3>
         <div class="filter-options">
@@ -66,7 +67,7 @@
                         <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
                     {{end}}
                     <span class="like-btn btn-sm">💬 {{.CommentsCount}} comments</span>
-                    <a href="/post/{{.ID}}" class="btn btn-secondary btn-sm">Read More</a>
+                    <a href="/post/{{.ID}}" class="like-btn btn-sm">Comment</a>
                 </div>
             </div>
             {{end}}
