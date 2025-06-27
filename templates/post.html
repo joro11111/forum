@@ -74,7 +74,7 @@
             <form method="POST" action="/create-comment">
                 <input type="hidden" name="post_id" value="{{.Post.ID}}">
                 <div class="form-group">
-                    <textarea name="content" class="form-control" rows="3" placeholder="Share your thoughts..." required></textarea>
+                    <textarea name="content" class="form-control" rows="5" cols="50"placeholder="Share your thoughts..." required></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
             </form>
