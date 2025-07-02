@@ -87,8 +87,19 @@ func main() {
 	// 404 handler
 	mux.HandleFunc("/404", h.NotFoundHandler)
 
-	// Wrap with logging middleware
-	handler := loggingMiddleware(mux)
+	// Test routes for development (remove in production)
+	if os.Getenv("ENV") != "production" {
+		mux.HandleFunc("/test-panic", func(w http.ResponseWriter, r *http.Request) {
+			panic("This is a test panic for recovery middleware testing")
+		})
+		mux.HandleFunc("/test-500", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Test 500 error", http.StatusInternalServerError)
+		})
+	}
+
+	// Wrap with recovery and logging middleware
+	// Recovery middleware is the outermost to catch panics from all layers
+	handler := recoveryMiddleware(loggingMiddleware(mux))
 
 	// Start server
 	port := os.Getenv("PORT")
@@ -170,6 +181,54 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start)
 		log.Printf("%s %s %d %v %s", r.Method, r.URL.Path, ww.statusCode, duration, r.RemoteAddr)
 	})
+}
+
+// recoveryMiddleware handles panics and provides graceful error recovery
+func recoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				// Log the panic with request details
+				log.Printf("panic recovered: %v | method: %s | path: %s | remote: %s",
+					err, r.Method, r.URL.Path, r.RemoteAddr)
+
+				// Try to render a nice error page, fallback to plain text
+				if renderError500(w, r) != nil {
+					// Fallback to plain text response if template rendering fails
+					if w.Header().Get("Content-Type") == "" {
+						w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+					}
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				}
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// renderError500 attempts to render the 500 error page with template
+func renderError500(w http.ResponseWriter, r *http.Request) error {
+	// Try to load the error template
+	tmpl, err := template.ParseFiles("templates/base.html", "templates/500.html")
+	if err != nil {
+		return err
+	}
+
+	// Create basic page data for the error page
+	data := struct {
+		Title       string
+		CurrentUser interface{} // We'll keep this simple to avoid potential panics
+	}{
+		Title:       "Internal Server Error",
+		CurrentUser: nil, // Keep it simple during error recovery
+	}
+
+	// Set appropriate headers
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusInternalServerError)
+
+	// Execute the template
+	return tmpl.ExecuteTemplate(w, "base", data)
 }
 
 // responseWriter wraps http.ResponseWriter to capture status code

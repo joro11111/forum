@@ -1,0 +1,19 @@
+{{define "content"}}
+<div class="card" style="text-align: center;">
+    <h1>🚨 Internal Server Error</h1>
+    <p style="font-size: 1.2rem; color: #e74c3c; margin: 2rem 0;">
+        Oops! Something went wrong on our end. Our literary lions are working hard to fix this issue.
+    </p>
+    <p style="color: #7f8c8d; margin-bottom: 2rem;">
+        Even the best stories sometimes have unexpected plot twists. Please try again in a moment.
+    </p>
+    <div>
+        <a href="/" class="btn btn-primary" style="margin-right: 1rem;">🏠 Return Home</a>
+        {{if .CurrentUser}}
+            <a href="/create-post" class="btn btn-secondary">✍️ Create a Post</a>
+        {{else}}
+            <a href="/register" class="btn btn-secondary">📚 Join the Community</a>
+        {{end}}
+    </div>
+</div>
+{{end}} 
