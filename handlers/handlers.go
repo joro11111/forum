@@ -192,6 +192,7 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 // Login handlers
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	
 	if r.Method == http.MethodGet {
 		data := PageData{
 			Title: "Login",
