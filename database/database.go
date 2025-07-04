@@ -454,17 +454,15 @@ func (db *DB) CreatePost(post *models.Post) error {
 
 func (db *DB) GetAllPosts() ([]models.Post, error) {
 	query := `
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN post_likes pl ON p.id = pl.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
 		ORDER BY p.created_at DESC
 	`
 	return db.executePosts(query)
@@ -472,18 +470,16 @@ func (db *DB) GetAllPosts() ([]models.Post, error) {
 
 func (db *DB) GetPostsByCategory(categoryID int) ([]models.Post, error) {
 	query := `
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN post_likes pl ON p.id = pl.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
 		WHERE p.category_id = ?
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
 		ORDER BY p.created_at DESC
 	`
 	return db.executePostsWithArgs(query, categoryID)
@@ -491,18 +487,16 @@ func (db *DB) GetPostsByCategory(categoryID int) ([]models.Post, error) {
 
 func (db *DB) GetPostsByUser(userID int) ([]models.Post, error) {
 	query := `
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN post_likes pl ON p.id = pl.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
 		WHERE p.user_id = ?
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
 		ORDER BY p.created_at DESC
 	`
 	return db.executePostsWithArgs(query, userID)
@@ -510,37 +504,35 @@ func (db *DB) GetPostsByUser(userID int) ([]models.Post, error) {
 
 func (db *DB) GetLikedPostsByUser(userID int) ([]models.Post, error) {
 	query := `
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl2.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl2.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		JOIN post_likes pl ON p.id = pl.post_id AND pl.user_id = ? AND pl.is_like = 1
-		LEFT JOIN post_likes pl2 ON p.id = pl2.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
+		WHERE EXISTS (
+			SELECT 1 FROM post_likes pl 
+			WHERE pl.post_id = p.id AND pl.user_id = ? AND pl.is_like = 1
+		)
 		ORDER BY p.created_at DESC
 	`
 	return db.executePostsWithArgs(query, userID)
 }
-
 func (db *DB) GetPostByID(id int) (*models.Post, error) {
 	query := `
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN post_likes pl ON p.id = pl.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
 		WHERE p.id = ?
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
 	`
 	row := db.QueryRow(query, id)
 
@@ -554,7 +546,6 @@ func (db *DB) GetPostByID(id int) (*models.Post, error) {
 
 	return &post, nil
 }
-
 func (db *DB) executePosts(query string) ([]models.Post, error) {
 	rows, err := db.Query(query)
 	if err != nil {
@@ -747,18 +738,16 @@ func (db *DB) GetCommentLikeStatus(userID, commentID int) (bool, bool, error) {
 func (db *DB) SearchPosts(searchTerm string, limit int) ([]models.Post, error) {
 	searchPattern := "%" + searchTerm + "%"
 	query := `
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN post_likes pl ON p.id = pl.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
 		WHERE p.title LIKE ? OR p.content LIKE ?
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
 		ORDER BY p.created_at DESC
 		LIMIT ?
 	`
@@ -924,7 +913,7 @@ func (db *DB) GetUserStats(userID int) (int, int, int, error) {
 
 	// Count likes received on user's posts
 	err = db.QueryRow(`
-		SELECT COUNT(*) FROM post_likes pl 
+		SELECT COUNT(DISTINCT p.id) FROM post_likes pl 
 		JOIN posts p ON pl.post_id = p.id 
 		WHERE p.user_id = ? AND pl.is_like = 1
 	`, userID).Scan(&likesReceived)
@@ -943,18 +932,16 @@ func (db *DB) GetPostsWithSuspendedFilter(showSuspended bool) ([]models.Post, er
 	}
 
 	query := fmt.Sprintf(`
-		SELECT p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
-		       p.created_at, p.updated_at,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
-		       COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count,
-		       COUNT(DISTINCT cm.id) as comments_count
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		JOIN categories c ON p.category_id = c.id
-		LEFT JOIN post_likes pl ON p.id = pl.post_id
-		LEFT JOIN comments cm ON p.id = cm.post_id
 		%s
-		GROUP BY p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, p.created_at, p.updated_at
 		ORDER BY p.created_at DESC
 	`, whereClause)
 
