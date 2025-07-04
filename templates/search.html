@@ -10,7 +10,7 @@
                 name="q" 
                 id="search-input"
                 class="form-control" 
-                placeholder="Search for posts by title or content..." 
+                placeholder="Search for posts." 
                 value="{{index .FormData "q"}}"
                 autocomplete="off"
                 style="margin-bottom: 1rem;"
@@ -19,7 +19,6 @@
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
     </form>
-    
     <!-- Search Results -->
     {{if .Posts}}
         <h2>Search Results ({{len .Posts}} found)</h2>
