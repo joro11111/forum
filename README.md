@@ -39,71 +39,38 @@ A web forum application for the Literary Lions book club to facilitate online di
 
 ## Entity Relationship Diagram (ERD)
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    Users    │    │ Categories  │    │    Posts    │
-├─────────────┤    ├─────────────┤    ├─────────────┤
-│ id (PK)     │    │ id (PK)     │    │ id (PK)     │
-│ username    │    │ name        │    │ title       │
-│ email       │    │ description │    │ content     │
-│ password    │    │ created_at  │    │ user_id(FK) │
-│ profile_pic │    └─────────────┘    │ category_id │
-│ signature   │                       │ created_at  │
-│ role        │                       │ updated_at  │
-│ status      │                       └─────────────┘
-│ created_at  │                              │
-└─────────────┘                              │
-       │                                     │
-       │    ┌─────────────┐                 │
-       │    │  Sessions   │                 │
-       │    ├─────────────┤                 │
-       │    │ id (PK)     │                 │
-       │    │ user_id(FK) │                 │
-       │    │ uuid        │                 │
-       │    │ expires_at  │                 │
-       │    │ created_at  │                 │
-       │    └─────────────┘                 │
-       │                                    │
-       │    ┌─────────────┐                 │
-       └────┤  Comments   │─────────────────┘
-            ├─────────────┤        ┌─────────────┐
-            │ id (PK)     │        │ Post_Likes  │
-            │ content     │        ├─────────────┤
-            │ user_id(FK) │        │ id (PK)     │
-            │ post_id(FK) │        │ user_id(FK) │
-            │ parent_id   │◄────┐  │ post_id(FK) │
-            │ created_at  │     │  │ is_like     │
-            └─────────────┘     │  │ created_at  │
-                   │            │  └─────────────┘
-                   │            │
-                   │            │  ┌─────────────┐
-                   │            │  │Comment_Likes│
-                   │            │  ├─────────────┤
-                   │            │  │ id (PK)     │
-                   │            │  │ user_id(FK) │
-                   │            │  │ comment_id  │
-                   │            │  │ is_like     │
-                   │            │  │ created_at  │
-                   │            │  └─────────────┘
-                   │            │
-                   └────────────┘
-                   Self-referencing FK for threaded comments
+![Database ERD](static/database-erd.jpg)
 
-Relationships:
-- Users 1:M Posts (one user can create many posts)
-- Users 1:M Comments (one user can create many comments)
-- Posts 1:M Comments (one post can have many comments)
-- Comments 1:M Comments (self-referencing: parent-child relationship for threading)
-- Categories 1:M Posts (one category can contain many posts)
-- Users 1:M Sessions (one user can have multiple sessions)
-- Users M:M Posts (through Post_Likes - many users can like many posts)
-- Users M:M Comments (through Comment_Likes - many users can like many comments)
+### Database Schema Overview
 
-New Features:
-- Threaded comments with parent_id for unlimited nesting
-- User roles (admin/user) and status (active/suspended)
-- User profiles with avatars and signatures
-```
+The Literary Lions Forum uses a comprehensive database schema designed to support all advanced features:
+
+#### Core Tables:
+- **Users**: User accounts with profiles, roles, and status management
+- **Categories**: Discussion categories for content organization
+- **Posts**: Forum posts with metadata and statistics
+- **Comments**: Threaded comments with parent-child relationships for unlimited nesting
+- **Sessions**: Secure user session management with expiration
+
+#### Feature Tables:
+- **Post_Likes**: Like/dislike tracking for posts
+- **Comment_Likes**: Like/dislike tracking for comments at all nesting levels
+
+#### Key Relationships:
+- **Users 1:M Posts**: One user can create many posts
+- **Users 1:M Comments**: One user can create many comments
+- **Posts 1:M Comments**: One post can have many comments
+- **Comments 1:M Comments**: Self-referencing relationship for threaded comments
+- **Categories 1:M Posts**: One category can contain many posts
+- **Users 1:M Sessions**: One user can have multiple sessions
+- **Users M:M Posts**: Through Post_Likes - many users can like many posts
+- **Users M:M Comments**: Through Comment_Likes - many users can like many comments
+
+#### Advanced Features:
+- **Threaded Comments**: Uses `parent_id` foreign key for unlimited nesting depth
+- **User Roles**: Admin and user roles with appropriate permissions
+- **User Status**: Active/suspended status management
+- **Extended Profiles**: Support for avatars and signatures
 
 ## API Routes & Endpoints
 

@@ -93,43 +93,44 @@ func (h *Handler) countCommentsInTree(tree models.CommentTree) int {
 
 func (h *Handler) buildCommentTree(comments []models.Comment) []models.CommentTree {
 	// Create a map to store comments by their ID for quick lookup
-	commentMap := make(map[int]*models.CommentTree)
-	var topLevelComments []*models.CommentTree
+	commentMap := make(map[int]models.Comment)
+	var topLevelComments []models.Comment
 
-	// First pass: create CommentTree entries for all comments
+	// First pass: create comment map and identify top-level comments
 	for _, comment := range comments {
-		commentTree := &models.CommentTree{
-			Comment: comment,
-			Replies: []models.CommentTree{},
-		}
-		commentMap[comment.ID] = commentTree
-	}
-
-	// Second pass: organize into hierarchy
-	for _, comment := range comments {
+		commentMap[comment.ID] = comment
 		if comment.ParentID == nil {
-			// Top-level comment
-			if tree, exists := commentMap[comment.ID]; exists {
-				topLevelComments = append(topLevelComments, tree)
-			}
-		} else {
-			// Reply comment - add to parent's replies
-			parentID := *comment.ParentID
-			if parentTree, exists := commentMap[parentID]; exists {
-				if childTree, childExists := commentMap[comment.ID]; childExists {
-					parentTree.Replies = append(parentTree.Replies, *childTree)
-				}
-			}
+			topLevelComments = append(topLevelComments, comment)
 		}
 	}
 
-	// Convert pointers back to values for return
-	result := make([]models.CommentTree, len(topLevelComments))
-	for i, tree := range topLevelComments {
-		result[i] = *tree
+	// Build the tree recursively
+	var result []models.CommentTree
+	for _, comment := range topLevelComments {
+		tree := h.buildCommentSubtree(comment, commentMap)
+		result = append(result, tree)
 	}
 
 	return result
+}
+
+// Helper function to recursively build comment subtree
+func (h *Handler) buildCommentSubtree(comment models.Comment, commentMap map[int]models.Comment) models.CommentTree {
+	var replies []models.CommentTree
+
+	// Find all direct replies to this comment
+	for _, c := range commentMap {
+		if c.ParentID != nil && *c.ParentID == comment.ID {
+			// Recursively build subtree for this reply
+			subtree := h.buildCommentSubtree(c, commentMap)
+			replies = append(replies, subtree)
+		}
+	}
+
+	return models.CommentTree{
+		Comment: comment,
+		Replies: replies,
+	}
 }
 
 // LoadPageTemplate loads the base template and a specific page template
@@ -160,6 +161,20 @@ func (h *Handler) LoadPageTemplate(templateFile string) (*template.Template, err
 				count += 1 + h.countCommentsInTree(tree)
 			}
 			return count
+		},
+		"dict": func(values ...interface{}) map[string]interface{} {
+			if len(values)%2 != 0 {
+				panic("dict requires an even number of arguments")
+			}
+			result := make(map[string]interface{})
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					panic("dict keys must be strings")
+				}
+				result[key] = values[i+1]
+			}
+			return result
 		},
 	})
 

@@ -37,100 +37,7 @@
     <!-- Display top-level comments -->
     {{$pageData := .}}
     {{range .CommentTrees}}
-        <!-- Top-level comment -->
-        <div class="comment" id="comment-{{.ID}}">
-            <div class="comment-meta">
-                <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
-            </div>
-            <div>{{.Content}}</div>
-            
-            <div class="post-actions">
-                {{if $pageData.CurrentUser}}
-                    <form method="POST" action="/like-comment" class="like-form">
-                        <input type="hidden" name="comment_id" value="{{.ID}}">
-                        <input type="hidden" name="action" value="like">
-                        <button type="submit" class="like-btn btn-sm">👍 {{.LikesCount}}</button>
-                    </form>
-                    
-                    <form method="POST" action="/like-comment" class="like-form">
-                        <input type="hidden" name="comment_id" value="{{.ID}}">
-                        <input type="hidden" name="action" value="dislike">
-                        <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
-                    </form>
-                    
-                    <button type="button" class="reply-btn btn-sm" onclick="toggleReplyForm({{.ID}})">💬 Reply</button>
-                {{else}}
-                    <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
-                    <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
-                {{end}}
-            </div>
-            
-            {{if $pageData.CurrentUser}}
-                <!-- Reply form (initially hidden) -->
-                <div id="reply-form-{{.ID}}" class="reply-form" style="display: none;">
-                    <form method="POST" action="/create-comment">
-                        <input type="hidden" name="post_id" value="{{$pageData.Post.ID}}">
-                        <input type="hidden" name="parent_id" value="{{.ID}}">
-                        <div class="form-group">
-                            <textarea name="content" class="form-control" rows="3" placeholder="Write your reply..." required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleReplyForm({{.ID}})">Cancel</button>
-                    </form>
-                </div>
-            {{end}}
-            
-            <!-- Display replies -->
-            {{range .Replies}}
-                <div class="comment reply" id="comment-{{.ID}}">
-                    <div class="comment-meta">
-                        <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
-                    </div>
-                    <div>{{.Content}}</div>
-                    
-                    <div class="post-actions">
-                        {{if $pageData.CurrentUser}}
-                            <form method="POST" action="/like-comment" class="like-form">
-                                <input type="hidden" name="comment_id" value="{{.ID}}">
-                                <input type="hidden" name="action" value="like">
-                                <button type="submit" class="like-btn btn-sm">👍 {{.LikesCount}}</button>
-                            </form>
-                            
-                            <form method="POST" action="/like-comment" class="like-form">
-                                <input type="hidden" name="comment_id" value="{{.ID}}">
-                                <input type="hidden" name="action" value="dislike">
-                                <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
-                            </form>
-                            
-                            <button type="button" class="reply-btn btn-sm" onclick="toggleReplyForm({{.ID}})">💬 Reply</button>
-                        {{else}}
-                            <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
-                            <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
-                        {{end}}
-                    </div>
-                    
-                    {{if $pageData.CurrentUser}}
-                        <!-- Reply form (initially hidden) -->
-                        <div id="reply-form-{{.ID}}" class="reply-form" style="display: none;">
-                            <form method="POST" action="/create-comment">
-                                <input type="hidden" name="post_id" value="{{$pageData.Post.ID}}">
-                                <input type="hidden" name="parent_id" value="{{.ID}}">
-                                <div class="form-group">
-                                    <textarea name="content" class="form-control" rows="3" placeholder="Write your reply..." required></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleReplyForm({{.ID}})">Cancel</button>
-                            </form>
-                        </div>
-                    {{end}}
-                    
-                    <!-- Display nested replies -->
-                    {{range .Replies}}
-                        {{template "renderComment" .}}
-                    {{end}}
-                </div>
-            {{end}}
-        </div>
+        {{template "renderComment" (dict "Comment" . "PageData" $pageData)}}
     {{else}}
         <p style="text-align: center; color: #7f8c8d; font-style: italic;">No comments yet. Be the first to comment!</p>
     {{end}}
@@ -159,101 +66,56 @@ function toggleReplyForm(commentId) {
     }
 }
 </script>
-
-<style>
-.comment {
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border-left: 4px solid #3498db;
-}
-
-.comment.reply {
-    margin-left: 30px;
-    margin-top: 15px;
-    background-color: #ffffff;
-    border-left: 4px solid #95a5a6;
-}
-
-/* Nested replies - each level gets more indentation */
-.comment .comment.reply {
-    margin-left: 30px;
-}
-
-.comment .comment .comment.reply {
-    margin-left: 30px;
-    background-color: #f8f9fa;
-    border-left: 4px solid #bdc3c7;
-}
-
-.comment .comment .comment .comment.reply {
-    background-color: #ecf0f1;
-    border-left: 4px solid #d5dbdb;
-}
-
-.comment-meta {
-    color: #7f8c8d;
-    font-size: 0.9em;
-    margin-bottom: 10px;
-}
-
-.replies {
-    margin-top: 15px;
-}
-
-.reply-form {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #a8a8a81f;
-    border-radius: 8px;
-}
-
-.reply-btn {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-.reply-btn:hover {
-    background-color: #2980b9;
-}
-
-.btn-secondary {
-    background-color: #95a5a6;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-.btn-secondary:hover {
-    background-color: #7f8c8d;
-}
-</style>
 {{end}}
 
 {{define "renderComment"}}
-    <div class="comment{{if .ParentID}} reply{{end}}" id="comment-{{.ID}}">
+    {{$comment := .Comment}}
+    {{$pageData := .PageData}}
+    <div class="comment{{if $comment.ParentID}} reply{{end}}" id="comment-{{$comment.ID}}">
         <div class="comment-meta">
-            <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+            <strong><a href="/profile/{{$comment.Username}}" style="color: #3498db; text-decoration: none;">{{$comment.Username}}</a></strong> • {{$comment.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
         </div>
-        <div>{{.Content}}</div>
+        <div>{{$comment.Content}}</div>
         
         <div class="post-actions">
-            <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
-            <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
+            {{if $pageData.CurrentUser}}
+                <form method="POST" action="/like-comment" class="like-form">
+                    <input type="hidden" name="comment_id" value="{{$comment.ID}}">
+                    <input type="hidden" name="action" value="like">
+                    <button type="submit" class="like-btn btn-sm">👍 {{$comment.LikesCount}}</button>
+                </form>
+                
+                <form method="POST" action="/like-comment" class="like-form">
+                    <input type="hidden" name="comment_id" value="{{$comment.ID}}">
+                    <input type="hidden" name="action" value="dislike">
+                    <button type="submit" class="like-btn btn-sm">👎 {{$comment.DislikesCount}}</button>
+                </form>
+                
+                <button type="button" class="reply-btn btn-sm" onclick="toggleReplyForm({{$comment.ID}})">💬 Reply</button>
+            {{else}}
+                <span class="like-btn btn-sm">👍 {{$comment.LikesCount}}</span>
+                <span class="like-btn btn-sm">👎 {{$comment.DislikesCount}}</span>
+            {{end}}
         </div>
         
+        {{if $pageData.CurrentUser}}
+            <!-- Reply form (initially hidden) -->
+            <div id="reply-form-{{$comment.ID}}" class="reply-form" style="display: none;">
+                <form method="POST" action="/create-comment">
+                    <input type="hidden" name="post_id" value="{{$pageData.Post.ID}}">
+                    <input type="hidden" name="parent_id" value="{{$comment.ID}}">
+                    <div class="form-group">
+                        <textarea name="content" class="form-control" rows="3" placeholder="Write your reply..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleReplyForm({{$comment.ID}})">Cancel</button>
+                </form>
+            </div>
+        {{end}}
+        
         <!-- Display replies recursively -->
-        {{range .Replies}}
-            {{template "renderComment" .}}
+        {{range $comment.Replies}}
+            {{template "renderComment" (dict "Comment" . "PageData" $pageData)}}
         {{end}}
     </div>
 {{end}} 

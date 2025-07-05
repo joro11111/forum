@@ -567,27 +567,247 @@ body.night-mode .post-card {
 .card, .comments-section {
     display: block;
     width: 100%;
+    max-width: 100%;
     clear: both;
     margin-top: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
-.comment{
-    background-color: #ffffff;
+.comments-section {
+    padding: 0;
+    margin-bottom: 2rem;
+}
+
+.comments-section h3 {
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    font-size: 1.4rem;
+}
+
+body.night-mode .comments-section h3 {
+    color: #d7dadc !important;
+}
+
+/* Comment Styling */
+.comment {
+    background-color: #f8f9fa;
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    border-left: 4px solid #3498db;
+    border-radius: 8px;
     margin-bottom: 1rem;
     padding: 1rem;
-    max-width: 800px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Reply comments styling */
+.comment.reply {
+    margin-left: 20px;
+    margin-top: 15px;
+    background-color: #ffffff;
+    border-left: 4px solid #95a5a6;
+    max-width: calc(100% - 20px);
+}
+
+/* Nested replies - responsive indentation */
+.comment .comment.reply {
+    margin-left: 15px;
+    max-width: calc(100% - 15px);
+}
+
+.comment .comment .comment.reply {
+    margin-left: 15px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #bdc3c7;
+    max-width: calc(100% - 15px);
+}
+
+.comment .comment .comment .comment.reply {
+    background-color: #ecf0f1;
+    border-left: 4px solid #d5dbdb;
+    margin-left: 15px;
+    max-width: calc(100% - 15px);
+}
+
+/* Comment meta styling */
+.comment-meta {
+    color: #7f8c8d;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+/* Reply form styling */
+.reply-form {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: rgba(168, 168, 168, 0.12);
+    border-radius: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Reply button styling */
+.reply-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+.reply-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Secondary button styling */
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+/* Form elements inside comments */
+.comment .form-control,
+.comment textarea,
+.reply-form textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.comment .form-group {
+    margin-bottom: 1rem;
+}
+
+.comment .post-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.comment .post-actions .like-form {
+    display: inline-flex;
+}
+
+/* Ensure long text doesn't break layout */
+.comment div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-width: 100%;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .comment.reply {
+        margin-left: 10px;
+        max-width: calc(100% - 10px);
+    }
+    
+    .comment .comment.reply {
+        margin-left: 8px;
+        max-width: calc(100% - 8px);
+    }
+    
+    .comment .comment .comment.reply {
+        margin-left: 8px;
+        max-width: calc(100% - 8px);
+    }
+    
+    .comment .comment .comment .comment.reply {
+        margin-left: 8px;
+        max-width: calc(100% - 8px);
+    }
+    
+    .comment {
+        padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .reply-form {
+        padding: 10px;
+    }
+    
+    .comment .post-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .comment .post-actions .like-form {
+        display: inline-flex;
+        max-width: fit-content;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .comment.reply,
+    .comment .comment.reply,
+    .comment .comment .comment.reply,
+    .comment .comment .comment .comment.reply {
+        margin-left: 5px;
+        max-width: calc(100% - 5px);
+    }
+    
+    .comment {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .reply-form {
+        padding: 8px;
+    }
+    
+    .reply-btn,
+    .btn-secondary {
+        padding: 4px 8px;
+        font-size: 0.8em;
+        margin-left: 5px;
+    }
 }
 
 
+/* Night mode comment styling */
 body.night-mode .comment {
-  background: #23272a !important;
-  color: #f5f5f5 !important;
-    background-color: #272729;
-    border: 1px solid #343536;
+    background-color: #272729 !important;
+    color: #d7dadc !important;
+    border: 1px solid #343536 !important;
+    border-left: 4px solid #0079d3 !important;
+}
+
+body.night-mode .comment.reply {
+    background-color: #1a1a1b !important;
+    border-left: 4px solid #555 !important;
+}
+
+body.night-mode .comment .comment .comment.reply {
+    background-color: #272729 !important;
+    border-left: 4px solid #666 !important;
+}
+
+body.night-mode .comment .comment .comment .comment.reply {
+    background-color: #1f1f1f !important;
+    border-left: 4px solid #777 !important;
 }
 
 .form-group {
@@ -623,8 +843,9 @@ body.night-mode .category-btn.active {
 
 /* Night mode styles for reply forms and form controls */
 body.night-mode .reply-form {
-  background-color: #1a1a1b !important;
-  border: 1px solid #343536 !important;
+    background-color: rgba(26, 26, 27, 0.8) !important;
+    border: 1px solid #343536 !important;
+    border-radius: 8px !important;
 }
 
 body.night-mode .form-control,
@@ -632,33 +853,39 @@ body.night-mode textarea,
 body.night-mode input[type="text"],
 body.night-mode input[type="email"],
 body.night-mode input[type="password"] {
-  background-color: #272729 !important;
-  color: #d7dadc !important;
-  border: 1px solid #343536 !important;
+    background-color: #272729 !important;
+    color: #d7dadc !important;
+    border: 1px solid #343536 !important;
+    border-radius: 4px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 body.night-mode .form-control::placeholder,
 body.night-mode textarea::placeholder {
-  color: #818384 !important;
+    color: #818384 !important;
 }
 
 body.night-mode .btn-secondary {
-  background-color: #343536 !important;
-  color: #d7dadc !important;
-  border: 1px solid #555 !important;
+    background-color: #343536 !important;
+    color: #d7dadc !important;
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
 }
 
 body.night-mode .btn-secondary:hover {
-  background-color: #555 !important;
+    background-color: #555 !important;
 }
 
 body.night-mode .reply-btn {
-  background-color: #0079d3 !important;
-  color: white !important;
+    background-color: #0079d3 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
 }
 
 body.night-mode .reply-btn:hover {
-  background-color: #0056a3 !important;
+    background-color: #0056a3 !important;
 }
 
 /* Night mode styles for profile and signature elements */

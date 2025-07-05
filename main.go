@@ -137,6 +137,20 @@ func loadTemplates() (*template.Template, error) {
 		"add": func(a, b int) int {
 			return a + b
 		},
+		"dict": func(values ...interface{}) map[string]interface{} {
+			if len(values)%2 != 0 {
+				panic("dict requires an even number of arguments")
+			}
+			result := make(map[string]interface{})
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					panic("dict keys must be strings")
+				}
+				result[key] = values[i+1]
+			}
+			return result
+		},
 	})
 
 	// Collect all template files
