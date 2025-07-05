@@ -621,6 +621,73 @@ body.night-mode .category-btn.active {
   color: #fff !important;
 }
 
+/* Night mode styles for reply forms and form controls */
+body.night-mode .reply-form {
+  background-color: #1a1a1b !important;
+  border: 1px solid #343536 !important;
+}
+
+body.night-mode .form-control,
+body.night-mode textarea,
+body.night-mode input[type="text"],
+body.night-mode input[type="email"],
+body.night-mode input[type="password"] {
+  background-color: #272729 !important;
+  color: #d7dadc !important;
+  border: 1px solid #343536 !important;
+}
+
+body.night-mode .form-control::placeholder,
+body.night-mode textarea::placeholder {
+  color: #818384 !important;
+}
+
+body.night-mode .btn-secondary {
+  background-color: #343536 !important;
+  color: #d7dadc !important;
+  border: 1px solid #555 !important;
+}
+
+body.night-mode .btn-secondary:hover {
+  background-color: #555 !important;
+}
+
+body.night-mode .reply-btn {
+  background-color: #0079d3 !important;
+  color: white !important;
+}
+
+body.night-mode .reply-btn:hover {
+  background-color: #0056a3 !important;
+}
+
+/* Night mode styles for profile and signature elements */
+body.night-mode .signature {
+  background-color: #272729 !important;
+  border-left: 4px solid #0079d3 !important;
+  color: #d7dadc !important;
+}
+
+body.night-mode .signature h3 {
+  color: #d7dadc !important;
+}
+
+body.night-mode .signature-text {
+  color: #b3b3b3 !important;
+}
+
+body.night-mode .member-since {
+  color: #818384 !important;
+}
+
+body.night-mode .profile-info h1 {
+  color: #d7dadc !important;
+}
+
+body.night-mode .comment-meta {
+  color: #818384 !important;
+}
+
 .form-group-flex {
   display: flex;
   align-items: flex-start;

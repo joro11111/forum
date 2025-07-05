@@ -32,18 +32,20 @@
 </div>
 
 <div class="comments-section">
-    <h3>💬 Comments ({{len .Comments}})</h3>
+    <h3>💬 Comments ({{.FormData.total_comments}})</h3>
     
-    
-    {{range .Comments}}
-        <div class="comment">
+    <!-- Display top-level comments -->
+    {{$pageData := .}}
+    {{range .CommentTrees}}
+        <!-- Top-level comment -->
+        <div class="comment" id="comment-{{.ID}}">
             <div class="comment-meta">
                 <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
             </div>
             <div>{{.Content}}</div>
             
-            {{if $.CurrentUser}}
-                <div class="post-actions">
+            <div class="post-actions">
+                {{if $pageData.CurrentUser}}
                     <form method="POST" action="/like-comment" class="like-form">
                         <input type="hidden" name="comment_id" value="{{.ID}}">
                         <input type="hidden" name="action" value="like">
@@ -55,11 +57,77 @@
                         <input type="hidden" name="action" value="dislike">
                         <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
                     </form>
-                </div>
-            {{else}}
-                <div class="post-actions">
+                    
+                    <button type="button" class="reply-btn btn-sm" onclick="toggleReplyForm({{.ID}})">💬 Reply</button>
+                {{else}}
                     <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
                     <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
+                {{end}}
+            </div>
+            
+            {{if $pageData.CurrentUser}}
+                <!-- Reply form (initially hidden) -->
+                <div id="reply-form-{{.ID}}" class="reply-form" style="display: none;">
+                    <form method="POST" action="/create-comment">
+                        <input type="hidden" name="post_id" value="{{$pageData.Post.ID}}">
+                        <input type="hidden" name="parent_id" value="{{.ID}}">
+                        <div class="form-group">
+                            <textarea name="content" class="form-control" rows="3" placeholder="Write your reply..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleReplyForm({{.ID}})">Cancel</button>
+                    </form>
+                </div>
+            {{end}}
+            
+            <!-- Display replies -->
+            {{range .Replies}}
+                <div class="comment reply" id="comment-{{.ID}}">
+                    <div class="comment-meta">
+                        <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+                    </div>
+                    <div>{{.Content}}</div>
+                    
+                    <div class="post-actions">
+                        {{if $pageData.CurrentUser}}
+                            <form method="POST" action="/like-comment" class="like-form">
+                                <input type="hidden" name="comment_id" value="{{.ID}}">
+                                <input type="hidden" name="action" value="like">
+                                <button type="submit" class="like-btn btn-sm">👍 {{.LikesCount}}</button>
+                            </form>
+                            
+                            <form method="POST" action="/like-comment" class="like-form">
+                                <input type="hidden" name="comment_id" value="{{.ID}}">
+                                <input type="hidden" name="action" value="dislike">
+                                <button type="submit" class="like-btn btn-sm">👎 {{.DislikesCount}}</button>
+                            </form>
+                            
+                            <button type="button" class="reply-btn btn-sm" onclick="toggleReplyForm({{.ID}})">💬 Reply</button>
+                        {{else}}
+                            <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
+                            <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
+                        {{end}}
+                    </div>
+                    
+                    {{if $pageData.CurrentUser}}
+                        <!-- Reply form (initially hidden) -->
+                        <div id="reply-form-{{.ID}}" class="reply-form" style="display: none;">
+                            <form method="POST" action="/create-comment">
+                                <input type="hidden" name="post_id" value="{{$pageData.Post.ID}}">
+                                <input type="hidden" name="parent_id" value="{{.ID}}">
+                                <div class="form-group">
+                                    <textarea name="content" class="form-control" rows="3" placeholder="Write your reply..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleReplyForm({{.ID}})">Cancel</button>
+                            </form>
+                        </div>
+                    {{end}}
+                    
+                    <!-- Display nested replies -->
+                    {{range .Replies}}
+                        {{template "renderComment" .}}
+                    {{end}}
                 </div>
             {{end}}
         </div>
@@ -74,11 +142,119 @@
             <form method="POST" action="/create-comment">
                 <input type="hidden" name="post_id" value="{{.Post.ID}}">
                 <div class="form-group">
-                    <textarea name="content" class="form-control" rows="5" cols="50"placeholder="Share your thoughts..." required></textarea>
+                    <textarea name="content" class="form-control" rows="5" cols="50" placeholder="Share your thoughts..." required></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
             </form>
         </div>
     {{end}}
+
+<script>
+function toggleReplyForm(commentId) {
+    var replyForm = document.getElementById('reply-form-' + commentId);
+    if (replyForm.style.display === 'none') {
+        replyForm.style.display = 'block';
+    } else {
+        replyForm.style.display = 'none';
+    }
+}
+</script>
+
+<style>
+.comment {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.comment.reply {
+    margin-left: 30px;
+    margin-top: 15px;
+    background-color: #ffffff;
+    border-left: 4px solid #95a5a6;
+}
+
+/* Nested replies - each level gets more indentation */
+.comment .comment.reply {
+    margin-left: 30px;
+}
+
+.comment .comment .comment.reply {
+    margin-left: 30px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #bdc3c7;
+}
+
+.comment .comment .comment .comment.reply {
+    background-color: #ecf0f1;
+    border-left: 4px solid #d5dbdb;
+}
+
+.comment-meta {
+    color: #7f8c8d;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.replies {
+    margin-top: 15px;
+}
+
+.reply-form {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #a8a8a81f;
+    border-radius: 8px;
+}
+
+.reply-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.reply-btn:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+</style>
+{{end}}
+
+{{define "renderComment"}}
+    <div class="comment{{if .ParentID}} reply{{end}}" id="comment-{{.ID}}">
+        <div class="comment-meta">
+            <strong><a href="/profile/{{.Username}}" style="color: #3498db; text-decoration: none;">{{.Username}}</a></strong> • {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+        </div>
+        <div>{{.Content}}</div>
+        
+        <div class="post-actions">
+            <span class="like-btn btn-sm">👍 {{.LikesCount}}</span>
+            <span class="like-btn btn-sm">👎 {{.DislikesCount}}</span>
+        </div>
+        
+        <!-- Display replies recursively -->
+        {{range .Replies}}
+            {{template "renderComment" .}}
+        {{end}}
+    </div>
 {{end}} 
 

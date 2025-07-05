@@ -65,9 +65,11 @@ func (db *DB) InitDB() error {
 			content TEXT NOT NULL,
 			user_id INTEGER NOT NULL,
 			post_id INTEGER NOT NULL,
+			parent_id INTEGER,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY(user_id) REFERENCES users(id),
-			FOREIGN KEY(post_id) REFERENCES posts(id)
+			FOREIGN KEY(post_id) REFERENCES posts(id),
+			FOREIGN KEY(parent_id) REFERENCES comments(id)
 		)`,
 		`CREATE TABLE IF NOT EXISTS sessions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,6 +110,11 @@ func (db *DB) InitDB() error {
 	// Add migration for existing databases
 	if err := db.migrateUserTable(); err != nil {
 		return fmt.Errorf("error migrating user table: %v", err)
+	}
+
+	// Add migration for comments table
+	if err := db.migrateCommentsTable(); err != nil {
+		return fmt.Errorf("error migrating comments table: %v", err)
 	}
 
 	// Create admin user if it doesn't exist
@@ -202,6 +209,31 @@ func (db *DB) migrateUserTable() error {
 	if columnExists == 0 {
 		// Add status column
 		_, err = db.Exec("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// migrateCommentsTable adds new columns to existing comments tables
+func (db *DB) migrateCommentsTable() error {
+	// Check if parent_id column exists
+	var columnExists int
+	err := db.QueryRow(`
+		SELECT COUNT(*) 
+		FROM pragma_table_info('comments') 
+		WHERE name='parent_id'
+	`).Scan(&columnExists)
+
+	if err != nil {
+		return err
+	}
+
+	if columnExists == 0 {
+		// Add parent_id column
+		_, err = db.Exec("ALTER TABLE comments ADD COLUMN parent_id INTEGER REFERENCES comments(id)")
 		if err != nil {
 			return err
 		}
@@ -592,8 +624,8 @@ func (db *DB) executePostsWithArgs(query string, args ...interface{}) ([]models.
 
 // Comment operations
 func (db *DB) CreateComment(comment *models.Comment) error {
-	query := "INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)"
-	result, err := db.Exec(query, comment.Content, comment.UserID, comment.PostID)
+	query := "INSERT INTO comments (content, user_id, post_id, parent_id) VALUES (?, ?, ?, ?)"
+	result, err := db.Exec(query, comment.Content, comment.UserID, comment.PostID, comment.ParentID)
 	if err != nil {
 		return err
 	}
@@ -609,14 +641,14 @@ func (db *DB) CreateComment(comment *models.Comment) error {
 
 func (db *DB) GetCommentsByPostID(postID int) ([]models.Comment, error) {
 	query := `
-		SELECT c.id, c.content, c.user_id, c.post_id, u.username, c.created_at,
+		SELECT c.id, c.content, c.user_id, c.post_id, c.parent_id, u.username, c.created_at,
 		       COALESCE(SUM(CASE WHEN cl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
 		       COALESCE(SUM(CASE WHEN cl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count
 		FROM comments c
 		JOIN users u ON c.user_id = u.id
 		LEFT JOIN comment_likes cl ON c.id = cl.comment_id
 		WHERE c.post_id = ?
-		GROUP BY c.id, c.content, c.user_id, c.post_id, u.username, c.created_at
+		GROUP BY c.id, c.content, c.user_id, c.post_id, c.parent_id, u.username, c.created_at
 		ORDER BY c.created_at ASC
 	`
 	rows, err := db.Query(query, postID)
@@ -629,7 +661,7 @@ func (db *DB) GetCommentsByPostID(postID int) ([]models.Comment, error) {
 	for rows.Next() {
 		var comment models.Comment
 		err := rows.Scan(&comment.ID, &comment.Content, &comment.UserID, &comment.PostID,
-			&comment.Username, &comment.CreatedAt, &comment.LikesCount, &comment.DislikesCount)
+			&comment.ParentID, &comment.Username, &comment.CreatedAt, &comment.LikesCount, &comment.DislikesCount)
 		if err != nil {
 			return nil, err
 		}
@@ -958,14 +990,14 @@ func (db *DB) GetCommentsWithSuspendedFilter(postID int, showSuspended bool) ([]
 	}
 
 	query := fmt.Sprintf(`
-		SELECT c.id, c.content, c.user_id, c.post_id, u.username, c.created_at,
+		SELECT c.id, c.content, c.user_id, c.post_id, c.parent_id, u.username, c.created_at,
 		       COALESCE(SUM(CASE WHEN cl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
 		       COALESCE(SUM(CASE WHEN cl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count
 		FROM comments c
 		JOIN users u ON c.user_id = u.id
 		LEFT JOIN comment_likes cl ON c.id = cl.comment_id
 		%s
-		GROUP BY c.id, c.content, c.user_id, c.post_id, u.username, c.created_at
+		GROUP BY c.id, c.content, c.user_id, c.post_id, c.parent_id, u.username, c.created_at
 		ORDER BY c.created_at ASC
 	`, whereClause)
 
@@ -979,7 +1011,7 @@ func (db *DB) GetCommentsWithSuspendedFilter(postID int, showSuspended bool) ([]
 	for rows.Next() {
 		var comment models.Comment
 		err := rows.Scan(&comment.ID, &comment.Content, &comment.UserID, &comment.PostID,
-			&comment.Username, &comment.CreatedAt, &comment.LikesCount, &comment.DislikesCount)
+			&comment.ParentID, &comment.Username, &comment.CreatedAt, &comment.LikesCount, &comment.DislikesCount)
 		if err != nil {
 			return nil, err
 		}

@@ -16,16 +16,18 @@ import (
 
 // PageData represents the common data structure for all templates
 type PageData struct {
-	Posts       []models.Post     `json:"posts,omitempty"`
-	Categories  []models.Category `json:"categories,omitempty"`
-	Post        *models.Post      `json:"post,omitempty"`
-	Comments    []models.Comment  `json:"comments,omitempty"`
-	CurrentUser *models.User      `json:"current_user,omitempty"`
-	Filter      string            `json:"filter,omitempty"`
-	CategoryID  string            `json:"category_id,omitempty"`
-	Title       string            `json:"title,omitempty"`
-	Error       string            `json:"error,omitempty"`
-	FormData    map[string]string `json:"form_data,omitempty"`
+	Posts         []models.Post        `json:"posts,omitempty"`
+	Categories    []models.Category    `json:"categories,omitempty"`
+	Post          *models.Post         `json:"post,omitempty"`
+	Comments      []models.Comment     `json:"comments,omitempty"`
+	CommentTrees  []models.CommentTree `json:"comment_trees,omitempty"`
+	CurrentUser   *models.User         `json:"current_user,omitempty"`
+	Filter        string               `json:"filter,omitempty"`
+	CategoryID    string               `json:"category_id,omitempty"`
+	Title         string               `json:"title,omitempty"`
+	Error         string               `json:"error,omitempty"`
+	FormData      map[string]string    `json:"form_data,omitempty"`
+	TotalComments int                  `json:"total_comments,omitempty"`
 }
 
 type Handler struct {
@@ -73,6 +75,63 @@ func (h *Handler) GetCurrentUser(r *http.Request) *models.User {
 	return user
 }
 
+func (h *Handler) countTotalComments(commentTrees []models.CommentTree) int {
+	total := 0
+	for _, tree := range commentTrees {
+		total += 1 + h.countCommentsInTree(tree)
+	}
+	return total
+}
+
+func (h *Handler) countCommentsInTree(tree models.CommentTree) int {
+	count := 0
+	for _, reply := range tree.Replies {
+		count += 1 + h.countCommentsInTree(reply)
+	}
+	return count
+}
+
+func (h *Handler) buildCommentTree(comments []models.Comment) []models.CommentTree {
+	// Create a map to store comments by their ID for quick lookup
+	commentMap := make(map[int]*models.CommentTree)
+	var topLevelComments []*models.CommentTree
+
+	// First pass: create CommentTree entries for all comments
+	for _, comment := range comments {
+		commentTree := &models.CommentTree{
+			Comment: comment,
+			Replies: []models.CommentTree{},
+		}
+		commentMap[comment.ID] = commentTree
+	}
+
+	// Second pass: organize into hierarchy
+	for _, comment := range comments {
+		if comment.ParentID == nil {
+			// Top-level comment
+			if tree, exists := commentMap[comment.ID]; exists {
+				topLevelComments = append(topLevelComments, tree)
+			}
+		} else {
+			// Reply comment - add to parent's replies
+			parentID := *comment.ParentID
+			if parentTree, exists := commentMap[parentID]; exists {
+				if childTree, childExists := commentMap[comment.ID]; childExists {
+					parentTree.Replies = append(parentTree.Replies, *childTree)
+				}
+			}
+		}
+	}
+
+	// Convert pointers back to values for return
+	result := make([]models.CommentTree, len(topLevelComments))
+	for i, tree := range topLevelComments {
+		result[i] = *tree
+	}
+
+	return result
+}
+
 // LoadPageTemplate loads the base template and a specific page template
 func (h *Handler) LoadPageTemplate(templateFile string) (*template.Template, error) {
 	// Create a new template with custom functions
@@ -94,6 +153,13 @@ func (h *Handler) LoadPageTemplate(templateFile string) (*template.Template, err
 		},
 		"add": func(a, b int) int {
 			return a + b
+		},
+		"countComments": func(commentTrees []models.CommentTree) int {
+			count := 0
+			for _, tree := range commentTrees {
+				count += 1 + h.countCommentsInTree(tree)
+			}
+			return count
 		},
 	})
 
@@ -520,18 +586,28 @@ func (h *Handler) ViewPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get comments for the post (filter suspended users unless admin)
 	showSuspended := currentUser != nil && currentUser.IsAdmin()
-	comments, err := h.DB.GetCommentsWithSuspendedFilter(postID, showSuspended)
+	allComments, err := h.DB.GetCommentsWithSuspendedFilter(postID, showSuspended)
 	if err != nil {
 		http.Error(w, "Error fetching comments", http.StatusInternalServerError)
 		return
 	}
 
+	// Build hierarchical comment tree
+	commentTrees := h.buildCommentTree(allComments)
+
 	data := PageData{
-		Post:        post,
-		Comments:    comments,
-		CurrentUser: currentUser,
-		Title:       post.Title,
+		Post:         post,
+		Comments:     allComments,
+		CommentTrees: commentTrees,
+		CurrentUser:  currentUser,
+		Title:        post.Title,
 	}
+
+	// Add total comments count to FormData for template access
+	if data.FormData == nil {
+		data.FormData = make(map[string]string)
+	}
+	data.FormData["total_comments"] = strconv.Itoa(len(allComments))
 
 	tmpl, err := h.LoadPageTemplate("templates/post.html")
 	if err != nil {
@@ -541,7 +617,10 @@ func (h *Handler) ViewPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
-		http.Error(w, "Error rendering template", http.StatusInternalServerError)
+		log.Printf("Template execution error in ViewPostHandler: %v", err)
+		log.Printf("Post ID: %d, CommentTrees count: %d", postID, len(commentTrees))
+		// Don't try to send error response as headers may already be written
+		return
 	}
 }
 
@@ -559,6 +638,7 @@ func (h *Handler) CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	postIDStr := r.FormValue("post_id")
+	parentIDStr := r.FormValue("parent_id")
 	content := strings.TrimSpace(r.FormValue("content"))
 
 	postID, err := strconv.Atoi(postIDStr)
@@ -576,6 +656,16 @@ func (h *Handler) CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Content: content,
 		UserID:  currentUser.ID,
 		PostID:  postID,
+	}
+
+	// Handle parent ID for replies
+	if parentIDStr != "" {
+		parentID, err := strconv.Atoi(parentIDStr)
+		if err != nil {
+			http.Error(w, "Invalid parent ID", http.StatusBadRequest)
+			return
+		}
+		comment.ParentID = &parentID
 	}
 
 	if err := h.DB.CreateComment(comment); err != nil {

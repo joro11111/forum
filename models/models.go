@@ -57,10 +57,17 @@ type Comment struct {
 	Content       string    `json:"content"`
 	UserID        int       `json:"user_id"`
 	PostID        int       `json:"post_id"`
-	Username      string    `json:"username"` // For display
+	ParentID      *int      `json:"parent_id,omitempty"` // For replies - nil for top-level comments
+	Username      string    `json:"username"`            // For display
 	CreatedAt     time.Time `json:"created_at"`
 	LikesCount    int       `json:"likes_count"`
 	DislikesCount int       `json:"dislikes_count"`
+}
+
+// CommentTree represents a comment with its replies for hierarchical display
+type CommentTree struct {
+	Comment
+	Replies []CommentTree `json:"replies,omitempty"`
 }
 
 // Session represents a user session
