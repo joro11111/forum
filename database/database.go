@@ -622,6 +622,137 @@ func (db *DB) executePostsWithArgs(query string, args ...interface{}) ([]models.
 	return posts, nil
 }
 
+// buildOrderClause builds the ORDER BY clause for sorting posts
+func (db *DB) buildOrderClause(sortBy, sortOrder string) string {
+	orderBy := "ORDER BY "
+
+	switch sortBy {
+	case "date":
+		orderBy += "p.created_at"
+	case "likes":
+		orderBy += "likes_count"
+	case "comments":
+		orderBy += "comments_count"
+	case "title":
+		orderBy += "p.title"
+	default:
+		orderBy += "p.created_at"
+	}
+
+	if sortOrder == "asc" {
+		orderBy += " ASC"
+	} else {
+		orderBy += " DESC"
+	}
+
+	return orderBy
+}
+
+// GetPostsWithSorting gets all posts with specified sorting
+func (db *DB) GetPostsWithSorting(sortBy, sortOrder string) ([]models.Post, error) {
+	orderClause := db.buildOrderClause(sortBy, sortOrder)
+
+	query := `
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		JOIN categories c ON p.category_id = c.id
+		` + orderClause
+
+	return db.executePosts(query)
+}
+
+// GetPostsByCategoryWithSorting gets posts by category with specified sorting
+func (db *DB) GetPostsByCategoryWithSorting(categoryID int, sortBy, sortOrder string) ([]models.Post, error) {
+	orderClause := db.buildOrderClause(sortBy, sortOrder)
+
+	query := `
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		JOIN categories c ON p.category_id = c.id
+		WHERE p.category_id = ?
+		` + orderClause
+
+	return db.executePostsWithArgs(query, categoryID)
+}
+
+// GetPostsByUserWithSorting gets posts by user with specified sorting
+func (db *DB) GetPostsByUserWithSorting(userID int, sortBy, sortOrder string) ([]models.Post, error) {
+	orderClause := db.buildOrderClause(sortBy, sortOrder)
+
+	query := `
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		JOIN categories c ON p.category_id = c.id
+		WHERE p.user_id = ?
+		` + orderClause
+
+	return db.executePostsWithArgs(query, userID)
+}
+
+// GetLikedPostsByUserWithSorting gets liked posts by user with specified sorting
+func (db *DB) GetLikedPostsByUserWithSorting(userID int, sortBy, sortOrder string) ([]models.Post, error) {
+	orderClause := db.buildOrderClause(sortBy, sortOrder)
+
+	query := `
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		JOIN categories c ON p.category_id = c.id
+		WHERE EXISTS (
+			SELECT 1 FROM post_likes pl 
+			WHERE pl.post_id = p.id AND pl.user_id = ? AND pl.is_like = 1
+		)
+		` + orderClause
+
+	return db.executePostsWithArgs(query, userID)
+}
+
+// GetPostsWithSuspendedFilterAndSorting gets posts with suspended filter and sorting
+func (db *DB) GetPostsWithSuspendedFilterAndSorting(showSuspended bool, sortBy, sortOrder string) ([]models.Post, error) {
+	orderClause := db.buildOrderClause(sortBy, sortOrder)
+
+	baseQuery := `
+		SELECT 
+			p.id, p.title, p.content, p.user_id, p.category_id, u.username, c.name, 
+			p.created_at, p.updated_at,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 1) as likes_count,
+			(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.is_like = 0) as dislikes_count,
+			(SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id) as comments_count
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		JOIN categories c ON p.category_id = c.id`
+
+	if !showSuspended {
+		baseQuery += " WHERE u.status = 'active'"
+	}
+
+	query := baseQuery + " " + orderClause
+	return db.executePosts(query)
+}
+
 // Comment operations
 func (db *DB) CreateComment(comment *models.Comment) error {
 	query := "INSERT INTO comments (content, user_id, post_id, parent_id) VALUES (?, ?, ?, ?)"

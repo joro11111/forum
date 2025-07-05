@@ -24,6 +24,8 @@ type PageData struct {
 	CurrentUser   *models.User         `json:"current_user,omitempty"`
 	Filter        string               `json:"filter,omitempty"`
 	CategoryID    string               `json:"category_id,omitempty"`
+	SortBy        string               `json:"sort_by,omitempty"`
+	SortOrder     string               `json:"sort_order,omitempty"`
 	Title         string               `json:"title,omitempty"`
 	Error         string               `json:"error,omitempty"`
 	FormData      map[string]string    `json:"form_data,omitempty"`
@@ -209,6 +211,16 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	// Handle filtering
 	filter := r.URL.Query().Get("filter")
 	categoryID := r.URL.Query().Get("category")
+	sortBy := r.URL.Query().Get("sort_by")
+	sortOrder := r.URL.Query().Get("sort_order")
+
+	// Set default sort values
+	if sortBy == "" {
+		sortBy = "date"
+	}
+	if sortOrder == "" {
+		sortOrder = "desc"
+	}
 
 	// Check if current user is admin to decide whether to show suspended content
 	showSuspended := currentUser != nil && currentUser.IsAdmin()
@@ -216,22 +228,22 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	switch filter {
 	case "my-posts":
 		if currentUser != nil {
-			posts, err = h.DB.GetPostsByUser(currentUser.ID)
+			posts, err = h.DB.GetPostsByUserWithSorting(currentUser.ID, sortBy, sortOrder)
 		}
 	case "liked-posts":
 		if currentUser != nil {
-			posts, err = h.DB.GetLikedPostsByUser(currentUser.ID)
+			posts, err = h.DB.GetLikedPostsByUserWithSorting(currentUser.ID, sortBy, sortOrder)
 		}
 	default:
 		if categoryID != "" {
 			catID, parseErr := strconv.Atoi(categoryID)
 			if parseErr == nil {
-				posts, err = h.DB.GetPostsByCategory(catID)
+				posts, err = h.DB.GetPostsByCategoryWithSorting(catID, sortBy, sortOrder)
 			} else {
-				posts, err = h.DB.GetPostsWithSuspendedFilter(showSuspended)
+				posts, err = h.DB.GetPostsWithSuspendedFilterAndSorting(showSuspended, sortBy, sortOrder)
 			}
 		} else {
-			posts, err = h.DB.GetPostsWithSuspendedFilter(showSuspended)
+			posts, err = h.DB.GetPostsWithSuspendedFilterAndSorting(showSuspended, sortBy, sortOrder)
 		}
 	}
 
@@ -252,6 +264,8 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser: currentUser,
 		Filter:      filter,
 		CategoryID:  categoryID,
+		SortBy:      sortBy,
+		SortOrder:   sortOrder,
 		Title:       "Home",
 		FormData: map[string]string{
 			"success": successMessage,

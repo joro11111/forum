@@ -32,6 +32,33 @@
                 {{end}}
             </ul>
         </div>
+
+        <!-- Sorting options -->
+        <div class="sorting-wrapper">
+            <h4>Sort Posts</h4>
+            <div class="sort-options">
+                <div class="sort-by">
+                    <label for="sort-by">Sort by:</label>
+                    <select id="sort-by" onchange="updateSorting()">
+                        <option value="date" {{if eq .SortBy "date"}}selected{{end}}>Date</option>
+                        <option value="likes" {{if eq .SortBy "likes"}}selected{{end}}>Likes</option>
+                        <option value="comments" {{if eq .SortBy "comments"}}selected{{end}}>Comments</option>
+                        <option value="title" {{if eq .SortBy "title"}}selected{{end}}>Title</option>
+                    </select>
+                </div>
+                <div class="sort-order">
+                    <label for="sort-order">Order:</label>
+                    <select id="sort-order" onchange="updateSorting()">
+                        <option value="desc" {{if eq .SortOrder "desc"}}selected{{end}}>
+                            <span class="sort-desc">{{if eq .SortBy "date"}}Newest First{{else if eq .SortBy "likes"}}Most Liked{{else if eq .SortBy "comments"}}Most Comments{{else if eq .SortBy "title"}}Z-A{{else}}Descending{{end}}</span>
+                        </option>
+                        <option value="asc" {{if eq .SortOrder "asc"}}selected{{end}}>
+                            <span class="sort-asc">{{if eq .SortBy "date"}}Oldest First{{else if eq .SortBy "likes"}}Least Liked{{else if eq .SortBy "comments"}}Least Comments{{else if eq .SortBy "title"}}A-Z{{else}}Ascending{{end}}</span>
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="posts-section">
@@ -79,4 +106,83 @@
         {{end}}
     </div>
 </main>
+
+<script>
+function updateCategoryFilter() {
+    const categorySelect = document.getElementById('category-select');
+    const categoryID = categorySelect.value;
+    
+    // Get current filter and sort parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const filter = urlParams.get('filter') || '';
+    const sortBy = urlParams.get('sort_by') || 'date';
+    const sortOrder = urlParams.get('sort_order') || 'desc';
+    
+    // Build new URL
+    let newUrl = '/?';
+    if (filter) newUrl += `filter=${filter}&`;
+    if (categoryID) newUrl += `category=${categoryID}&`;
+    if (sortBy) newUrl += `sort_by=${sortBy}&`;
+    if (sortOrder) newUrl += `sort_order=${sortOrder}&`;
+    
+    // Remove trailing '&' or '?' if present
+    newUrl = newUrl.replace(/[&?]$/, '');
+    
+    window.location.href = newUrl;
+}
+
+function updateSorting() {
+    const sortBySelect = document.getElementById('sort-by');
+    const sortOrderSelect = document.getElementById('sort-order');
+    const sortBy = sortBySelect.value;
+    const sortOrder = sortOrderSelect.value;
+    
+    // Get current filter and category parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const filter = urlParams.get('filter') || '';
+    const categoryID = urlParams.get('category') || '';
+    
+    // Build new URL
+    let newUrl = '/?';
+    if (filter) newUrl += `filter=${filter}&`;
+    if (categoryID) newUrl += `category=${categoryID}&`;
+    if (sortBy) newUrl += `sort_by=${sortBy}&`;
+    if (sortOrder) newUrl += `sort_order=${sortOrder}&`;
+    
+    // Remove trailing '&' or '?' if present
+    newUrl = newUrl.replace(/[&?]$/, '');
+    
+    window.location.href = newUrl;
+}
+
+// Update sort order options text based on sort by selection
+document.getElementById('sort-by').addEventListener('change', function() {
+    const sortBy = this.value;
+    const sortOrderSelect = document.getElementById('sort-order');
+    const descOption = sortOrderSelect.querySelector('option[value="desc"]');
+    const ascOption = sortOrderSelect.querySelector('option[value="asc"]');
+    
+    switch(sortBy) {
+        case 'date':
+            descOption.text = 'Newest First';
+            ascOption.text = 'Oldest First';
+            break;
+        case 'likes':
+            descOption.text = 'Most Liked';
+            ascOption.text = 'Least Liked';
+            break;
+        case 'comments':
+            descOption.text = 'Most Comments';
+            ascOption.text = 'Least Comments';
+            break;
+        case 'title':
+            descOption.text = 'Z-A';
+            ascOption.text = 'A-Z';
+            break;
+        default:
+            descOption.text = 'Descending';
+            ascOption.text = 'Ascending';
+    }
+});
+</script>
 {{end}}
