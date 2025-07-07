@@ -802,6 +802,39 @@ func (db *DB) GetCommentsByPostID(postID int) ([]models.Comment, error) {
 	return comments, nil
 }
 
+// GetCommentsByUser gets all comments made by a specific user
+func (db *DB) GetCommentsByUser(userID int) ([]models.Comment, error) {
+	query := `
+		SELECT c.id, c.content, c.user_id, c.post_id, c.parent_id, u.username, c.created_at,
+		       COALESCE(SUM(CASE WHEN cl.is_like = 1 THEN 1 ELSE 0 END), 0) as likes_count,
+		       COALESCE(SUM(CASE WHEN cl.is_like = 0 THEN 1 ELSE 0 END), 0) as dislikes_count
+		FROM comments c
+		JOIN users u ON c.user_id = u.id
+		LEFT JOIN comment_likes cl ON c.id = cl.comment_id
+		WHERE c.user_id = ?
+		GROUP BY c.id, c.content, c.user_id, c.post_id, c.parent_id, u.username, c.created_at
+		ORDER BY c.created_at DESC
+	`
+	rows, err := db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []models.Comment
+	for rows.Next() {
+		var comment models.Comment
+		err := rows.Scan(&comment.ID, &comment.Content, &comment.UserID, &comment.PostID,
+			&comment.ParentID, &comment.Username, &comment.CreatedAt, &comment.LikesCount, &comment.DislikesCount)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
+}
+
 // Like operations
 func (db *DB) LikePost(userID, postID int, isLike bool) error {
 	// First, check if user already has a like/dislike on this post

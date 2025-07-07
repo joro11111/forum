@@ -913,10 +913,18 @@ func (h *Handler) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get user's comments
+	comments, err := h.DB.GetCommentsByUser(user.ID)
+	if err != nil {
+		http.Error(w, "Error fetching user comments", http.StatusInternalServerError)
+		return
+	}
+
 	currentUser := h.GetCurrentUser(r)
 
 	data := PageData{
 		Posts:       posts,
+		Comments:    comments,
 		CurrentUser: currentUser,
 		Title:       fmt.Sprintf("%s's Profile", user.Username),
 	}

@@ -41,19 +41,16 @@
                 {{range .Posts}}
                     {{$totalLikes = add $totalLikes .LikesCount}}
                 {{end}}
+                {{range .Comments}}
+                    {{$totalLikes = add $totalLikes .LikesCount}}
+                {{end}}
                 {{$totalLikes}}
             </span>
             <span class="stat-label">Total Likes</span>
         </div>
         <div class="stat-item">
-            <span class="stat-number">
-                {{$totalComments := 0}}
-                {{range .Posts}}
-                    {{$totalComments = add $totalComments .CommentsCount}}
-                {{end}}
-                {{$totalComments}}
-            </span>
-            <span class="stat-label">Total Comments</span>
+            <span class="stat-number">{{len .Comments}}</span>
+            <span class="stat-label">Comments Made</span>
         </div>
     </div>
 </div>
