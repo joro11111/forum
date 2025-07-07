@@ -24,7 +24,7 @@ A web forum application for the Literary Lions book club to facilitate online di
 
 ## Entity Relationship Diagram (ERD)
 
-![Database ERD](static/database_erd.jpg)
+![Database ERD](static/database_erd2.jpg)
 ##
 
 
